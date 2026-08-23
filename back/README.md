@@ -185,3 +185,34 @@ Todos los errores siguen el formato:
 ```json
 { "error": "mensaje descriptivo" }
 ```
+
+## Despliegue en Northflank
+
+Se despliega desde este repo (`ien-back`) como **servicio Docker** (no desde el monorepo):
+
+| Campo | Valor |
+|-------|-------|
+| Repository | `ien-back` |
+| Branch | `main` |
+| Build context | `/` (raíz) |
+| Dockerfile location | `/Dockerfile` |
+| Port | `3000` (público) |
+| Health check path | `/health` |
+
+Variables de entorno:
+
+| Variable | Valor |
+|----------|-------|
+| `NODE_ENV` | `production` |
+| `PORT` | `3000` |
+| `MONGO_URI` | inyectada por el addon MongoDB de Northflank |
+| `JWT_SECRET` | `openssl rand -hex 32` |
+| `CRON_API_KEY` | `openssl rand -hex 32` (misma en los cron jobs) |
+| `RESEND_API_KEY` | API key de resend.com |
+| `EMAIL_FROM` | email de envío |
+| `FRONTEND_URL` | URL exacta del frontend, sin slash final (CORS) |
+
+Seeder: ejecutar `node src/seed.js` una sola vez desde el terminal del servicio.
+
+Cron jobs (protegidos con header `X-API-KEY`): `POST /api/jobs/send-reminders` (cada 30 min) y
+`POST /api/jobs/run-daily` (3:00 UTC). Ver el paso a paso completo en `DEPLOY-NORTHFLANK.md` del repo principal.

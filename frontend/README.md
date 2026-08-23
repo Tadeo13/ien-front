@@ -26,11 +26,13 @@ npm run typecheck # Verificación de tipos
 
 ## Entorno
 
-Variable en `.env`:
+| Variable | Ámbito | Default | Descripción |
+|----------|--------|---------|-------------|
+| `VITE_API_URL` | Build-time (`.env` o build-arg) | `http://localhost:3000/api` | URL base del backend a la que llama el navegador. En Docker se compila con `/api` (relativa) para que Nginx haga el proxy. |
+| `BACKEND_HOST` | Runtime (contenedor Nginx) | `backend` | Host interno del backend hacia el que Nginx proxyfía `/api/*`. |
+| `BACKEND_PORT` | Runtime (contenedor Nginx) | `3000` | Puerto del backend para el proxy de Nginx. |
 
-| Variable | Default | Descripción |
-|----------|---------|-------------|
-| `VITE_API_URL` | `http://localhost:3000/api` | URL base del backend |
+En desarrollo local, basta con un `.env` con `VITE_API_URL=http://localhost:3000/api`. En producción (Docker), Nginx resuelve `http://${BACKEND_HOST}:${BACKEND_PORT}` desde el template `nginx.conf` (`/etc/nginx/templates/default.conf.template`); `BACKEND_HOST`/`BACKEND_PORT` se definen como `environment` en `docker-compose.yml`.
 
 ## Estructura del proyecto
 
@@ -252,3 +254,29 @@ Cada servicio exporta un objeto con métodos que usan la instancia `api` de axio
 - Idioma: español en toda la UI
 - Sin librerías de estado externas — solo React Context + useState
 - Sin tests configurados
+
+## Despliegue en Northflank
+
+Se despliega desde este repo (`ien-front`) como **Static Site** (no desde el monorepo):
+
+| Campo | Valor |
+|-------|-------|
+| Repository | `ien-front` |
+| Branch | `main` |
+| Build path | `/` (raíz) |
+| Build command | `npm ci && npm run build` |
+| Publish directory | `dist` |
+| Node version | **≥ 20** (Vite 6 lo exige) |
+
+Build argument:
+
+| Variable | Valor |
+|----------|-------|
+| `VITE_API_URL` | `https://<BACKEND>.northflank.app/api` |
+
+> **SPA fallback**: si refrescar rutas como `/login` o `/dashboard` devuelve 404, el static site
+> no sirve `index.html` para rutas desconocidas. Publica el frontend como **Docker/nginx** en su
+> lugar (ver `Dockerfile` + `nginx.conf`, que ya manejan SPA fallback y proxy `/api`) con
+> `BACKEND_HOST=https://<BACKEND>.northflank.app` y `BACKEND_PORT=443`.
+
+Ver el paso a paso completo en `DEPLOY-NORTHFLANK.md` del repo principal.

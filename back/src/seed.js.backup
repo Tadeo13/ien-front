@@ -163,7 +163,7 @@ const CONTENIDOS = [
         tipo: 'reflexion',
         respuesta_tipo: 'abierta'
       },
-contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abordamos la salud desde tres pilares fundamentales.\nMente: técnicas de mindfulness y autoconciencia.\nMovimiento: ejercicio consciente y conexión corporal.\nNutrición: suplementación natural y timing estratégico.\nPrevención Inteligente: enseña a no sobreentrenar cuando el cuerpo necesita recuperación; previene la alimentación emocional mediante reconocimiento consciente; genera resultados más sostenibles y reduce la frustración.\nOptimización Personalizada: planificación de suplementación según tus ritmos (ej: Ashwagandha en momentos de mayor estrés); timing nutricional — programa comidas cuando tu cuerpo más lo necesita; rutina de ejercicio — establece horarios basados en tus picos de energía natural.',
+contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abordamos la salud desde tres pilares fundamentales. Mente: técnicas de mindfulness y autoconciencia. Movimiento: ejercicio consciente y conexión corporal. Nutrición: suplementación natural y timing estratégico. Prevención Inteligente: enseña a no sobreentrenar cuando el cuerpo necesita recuperación; previene la alimentación emocional mediante reconocimiento consciente; genera resultados más sostenibles y reduce la frustración. Optimización Personalizada: planificación de suplementación según tus ritmos (ej: Ashwagandha en momentos de mayor estrés); timing nutricional — programa comidas cuando tu cuerpo más lo necesita; rutina de ejercicio — establece horarios basados en tus picos de energía natural.',
       suplementacion: [
         { nombre: 'Ashwagandha', dosis: '500mg', horario: 'Mañana', beneficio: 'Reducción de cortisol y estrés' },
         { nombre: 'Magnesio Glicinato', dosis: '400mg', horario: '2 horas antes de dormir', beneficio: 'Relajación muscular y sueño' },
@@ -224,11 +224,11 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
         tipo: 'registro',
         respuesta_tipo: 'estructurado'
       },
-      contenido: 'Ahora tienes una herramienta concreta para demostrarte a ti mismo que puedes comprometerte y cumplir.',
+      contenido: 'Cumplir este pequeño hito le demuestra a tu cerebro que eres capaz de mantener la disciplina.',
       suplementacion: [
         { nombre: 'Aminoácidos', dosis: 'Según indicación', horario: 'Pre o post-entrenamiento', beneficio: 'Acelerar la recuperación y fortalecer la sensación de logro físico' }
       ],
-      principio: 'Pequeños compromisos cumplidos generan grandes cambios neuronales. Cada micro-hábito sostenido fortalece tu identidad como alguien que cumple su palabra.',
+      principio: 'Cumplir este pequeño hito le demuestra a tu cerebro que eres capaz de mantener la disciplina, fortaleciendo tu voluntad para retos mayores.',
       recursos: []
     }
   },
@@ -309,9 +309,9 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
         nombre: 'Revisión de Transformación',
         instruccion: 'Análisis de los Últimos 4 Días:\n\nHaz una lista de 3 momentos específicos donde actuaste como el "protagonista" de tu salud integral.',
         pasos: [
-          { texto: '1) Momento de Protagonismo #1:\nSituación: ___\nAcción tomada: ___\nCómo me sentí: ___', respuesta_tipo: 'abierta' },
-          { texto: '2) Momento de Protagonismo #2:\nSituación: ___\nAcción tomada: ___\nCómo me sentí: ___', respuesta_tipo: 'abierta' },
-          { texto: '3) Momento de Protagonismo #3:\nSituación: ___\nAcción tomada: ___\nCómo me sentí: ___', respuesta_tipo: 'abierta' }
+          { texto: '1) Momento de Protagonismo #1: ·Situación: ___ ·Acción tomada: ___ ·Cómo me sentí: ___', respuesta_tipo: 'abierta' },
+          { texto: '2) Momento de Protagonismo #2: ·Situación: ___ ·Acción tomada: ___ ·Cómo me sentí: ___', respuesta_tipo: 'abierta' },
+          { texto: '3) Momento de Protagonismo #3: ·Situación: ___ ·Acción tomada: ___ ·Cómo me sentí: ___', respuesta_tipo: 'abierta' }
         ],
         tipo: 'reflexion',
         respuesta_tipo: 'abierta'
@@ -376,12 +376,12 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
         registro: { horario_elegido: '', suplemento_matutino: '', suplemento_nocturno: '' },
         respuesta_tipo: 'estructurado'
       },
-      contenido: 'Establecer una hora sagrada diaria crea anclajes circadianos que regulan el cortisol y optimizan tu energía.',
+      contenido: 'Cumplir este horario entrena al cerebro en autoeficacia y regula el cortisol, la hormona del estrés que dispara la ingesta emocional.',
       suplementacion: [
         { nombre: 'Ashwagandha + Complejo B', dosis: '300mg + 1 cápsula', horario: 'Mañana', beneficio: 'Regulación de cortisol' },
         { nombre: 'Magnesio Glicinato + Melatonina', dosis: '400mg + 1-2mg', horario: 'Noche', beneficio: 'Recuperación y sueño reparador' }
       ],
-      principio: 'La regularidad circadianas es la base de la autoeficacia. Una hora sagrada diaria regula tu cortisol y optimiza tu energía metabólica.',
+      principio: 'Principio Clave: cumplir este horario entrena al cerebro en autoeficacia y ayuda a regular el cortisol, la hormona del estrés que dispara la ingesta emocional.',
       recursos: []
     }
   },
@@ -409,7 +409,7 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
           sustituto: { objeto_saludable: '', accion_que_promueve: '' }
         },
       },
-      contenido: 'Optimización del Espacio de Suplementación:\n• Crea una "estación de bienestar": lugar visible con suplementos organizados\n• Recordatorios visuales: notas adhesivas con horarios de toma\n• Agua siempre disponible: botella llena junto a los suplementos\n\nEjemplos Prácticos de Transformación:\n• Control remoto en sofá → Cajón del mueble → Mat de yoga visible\n• Snacks procesados → Despensa alta → Frutas a la vista\n• Celular en mesa de noche → Cargador en sala → Libro de mindfulness',
+      contenido: 'Optimización del Espacio de Suplementación:\n• Crea una "estación de bienestar": lugar visible con suplementos organizados\n• Recordatorios visuales: notas adhesivas con horarios de toma\n• Agua siempre disponible: botella llena junto a los suplementos',
       suplementacion: [],
       principio: 'Principio Inteligente: controlar tu entorno es la forma más eficiente de no agotar tu fuerza de voluntad.',
       recursos: []
@@ -463,9 +463,9 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
           { texto: '1) ABLANDAR (Nivel Físico - 30s): Siéntate cómodamente, localiza la tensión corporal específica, respira hacia esa zona, relaja conscientemente los músculos contraídos', respuesta_tipo: 'accion' },
           { texto: '2) PERMITIR (Nivel Mental - 60s): Observa pensamientos sin juzgarlos, describe la emoción ("Siento ansiedad en el pecho"), no busques distraerte inmediatamente, permite que la sensación exista como "nube pasajera"', respuesta_tipo: 'accion' },
           { texto: '3) AMAR (Nivel Emocional - 30s): Coloca mano en corazón, repite "Puedo estar con esto ahora", ofrécete compasión ("Es normal sentir esto"), reconoce tu valentía por no huir', respuesta_tipo: 'accion' },
-          { texto: 'Ansiedad — intensidad ____/10 · duración real ____min · estrategia: ABLANDAR-PERMITIR-AMAR', respuesta_tipo: 'abierta' },
-          { texto: 'Frustración — intensidad ____/10 · duración real ____min · estrategia: Respiración + observación', respuesta_tipo: 'abierta' },
-          { texto: 'Aburrimiento — intensidad ____/10 · duración real ____min · estrategia: Tolerancia sin distracción', respuesta_tipo: 'abierta' }
+          { texto: 'Ansiedad — intensidad ____/10 · duración real ____min · estrategia usada: ABLANDAR-PERMITIR-AMAR', respuesta_tipo: 'abierta' },
+          { texto: 'Frustración — intensidad ____/10 · duración real ____min · estrategia usada: Respiración + observación', respuesta_tipo: 'abierta' },
+          { texto: 'Aburrimiento — intensidad ____/10 · duración real ____min · estrategia usada: Tolerancia sin distracción', respuesta_tipo: 'abierta' }
         ],
         tipo: 'registro',
         respuesta_tipo: 'estructurado',
@@ -506,7 +506,7 @@ contenido: 'Beneficios del Enfoque Integral — Enfoque 360°: esta semana abord
         tipo: 'practica',
         respuesta_tipo: 'abierta'
       },
-      contenido: 'La visualización repetida crea mapas neuronales que el cerebro interpreta como experiencias reales.\n\nFase 1: Proyección temporal a 10 años.\nFase 2: Experiencia sensorial completa.\nFase 3: Conexión emocional con tu propósito.',
+      contenido: 'La visualización repetida crea mapas neuronales que el cerebro interpreta como experiencias reales.',
       suplementacion: [
         { nombre: 'Rhodiola Rosea', dosis: '500mg', horario: '30 minutos antes', beneficio: 'Optimizar función cognitiva y visualización' },
         { nombre: 'Omega-3 (DHA/EPA)', dosis: '1000mg', horario: 'Mañana', beneficio: 'Soporte de neuroplasticidad y formación de nuevas conexiones' }
@@ -539,12 +539,12 @@ concepto: 'La Teoría de la Autodeterminación (Deci & Ryan) demuestra que la mo
         registro: { por_que: '', pegado_en: '' },
         respuesta_tipo: 'abierta'
       },
-      contenido: 'Escribe tu "porqué" en un post-it y ponlo donde lo veas cada mañana. Léelo en voz alta 7 días seguidos.',
+      contenido: 'Conectar acciones diarias con valores profundos activa el sistema de recompensa intrínseco.',
       suplementacion: [
         { nombre: 'Complejo B', dosis: '1 cápsula', horario: 'Mañana', beneficio: 'Optimizar función cognitiva y toma de decisiones' },
         { nombre: 'Ginkgo Biloba', dosis: '1 cápsula', horario: 'Mañana', beneficio: 'Mejorar circulación cerebral y claridad mental' }
       ],
-      principio: 'Escribe tu "porqué" en un post-it y ponlo donde lo veas cada mañana. Léelo en voz alta 7 días seguidos.',
+      principio: 'Transformación: conectar acciones diarias con valores profundos activa el sistema de recompensa intrínseco, haciendo que el cuidado personal se sienta natural, no forzado.',
       recursos: []
     }
   },
@@ -608,7 +608,7 @@ concepto: 'La Teoría de la Autodeterminación (Deci & Ryan) demuestra que la mo
         tipo: 'registro',
         respuesta_tipo: 'abierta'
       },
-      contenido: 'Beneficios del Enfoque Energético:\n• Motivación intrínseca: el foco en energía genera satisfacción inmediata\n• Sostenibilidad: no depende de fluctuaciones de peso\n• Conexión propósito: vincula nutrición con metas de vida reales\n\nIdentifica en tu plato:\n• Proteína: alimento ___ → reparación muscular y neurotransmisores\n• Carbohidratos complejos: alimento ___ → energía sostenida para cerebro\n• Grasas saludables: alimento ___ → absorción de vitaminas y hormonas\n• Vitaminas/minerales: alimento ___ → cofactores para producción de ATP',
+      contenido: 'Beneficios del Enfoque Energético:\n• Motivación intrínseca: el foco en energía genera satisfacción inmediata\n• Sostenibilidad: no depende de fluctuaciones de peso\n• Conexión propósito: vincula nutrición con metas de vida reales',
       suplementacion: [
         { nombre: 'Coenzima Q10', dosis: '100mg', horario: 'Con desayuno', beneficio: 'Producción de ATP mitocondrial' },
         { nombre: 'Complejo B', dosis: '1 cápsula', horario: 'Mañana', beneficio: 'Metabolismo de macronutrientes' },
@@ -679,7 +679,7 @@ concepto: 'La Teoría de la Autodeterminación (Deci & Ryan) demuestra que la mo
         registro: { pensamiento_autocritico: '', emocion: '', sensacion_fisica: '', respuesta_compasiva: '' },
         respuesta_tipo: 'estructurado'
       },
-      contenido: 'Hablarte con amabilidad reduce el estrés sistémico, permitiendo que tu corazón y metabolismo funcionen mejor.\n\nLa autocompasión activa el nervio vago, reduce la inflamación y mejora la variabilidad de la frecuencia cardíaca.',
+      contenido: 'Hablarte con amabilidad reduce el estrés sistémico, permitiendo que tu corazón y metabolismo funcionen mejor.',
       suplementacion: [
         { nombre: 'Ashwagandha', dosis: '300mg', horario: 'Mañana', beneficio: 'Reducción de cortisol en 27.9%' },
         { nombre: 'L-Teanina', dosis: '200mg', horario: 'Según necesidad', beneficio: 'Activación de ondas alfa sin sedación' },
@@ -701,13 +701,13 @@ concepto: 'Un "desliz" es solo un dato, no una definición de quién eres. La ne
         nombre: 'Protocolo de Redirección Consciente',
         instruccion: 'Cuando experimentes un "desliz" (alimentario, ejercicio o autocuidado), completa tu Nota de Re-enfoque:\n\nFormato de Nota de Redirección Consciente:\nFecha ___ · Situación ___ · Mi respuesta ___ · Dato que esto me enseña ___ · Mi próxima acción de autocuidado ___ · Razón por la que elijo esta acción ___ · Firma de autocompasión ___.\n\nEjemplos de Redirección Saludable: · Comí en exceso → ❌ Saltarme la próxima comida → ✅ Caminata suave + hidratación · No hice ejercicio → ❌ Doble sesión mañana → ✅ Estiramientos de 10 min hoy · Dormí mal → ❌ Cafeína excesiva → ✅ Magnesio + siesta de 20 min.',
         pasos: [
-          { texto: 'Fecha: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Situación: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Mi respuesta: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Dato que esto me enseña: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Próxima acción de autocuidado: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Razón de la acción elegida: ___', respuesta_tipo: 'abierta' },
-          { texto: 'Firma de autocompasión: ___', respuesta_tipo: 'abierta' }
+          { texto: '1) Fecha: ___', respuesta_tipo: 'abierta' },
+          { texto: '2) Situación: ___', respuesta_tipo: 'abierta' },
+          { texto: '3) Mi respuesta: ___', respuesta_tipo: 'abierta' },
+          { texto: '4) Dato que esto me enseña: ___', respuesta_tipo: 'abierta' },
+          { texto: '5) Mi próxima acción de autocuidado: ___', respuesta_tipo: 'abierta' },
+          { texto: '6) Razón por la que elijo esta acción: ___', respuesta_tipo: 'abierta' },
+          { texto: '7) Firma de autocompasión: ___', respuesta_tipo: 'abierta' }
         ],
         tipo: 'registro',
         respuesta_tipo: 'abierta',
@@ -749,7 +749,7 @@ concepto: 'Un "desliz" es solo un dato, no una definición de quién eres. La ne
         tipo: 'practica',
         respuesta_tipo: 'abierta'
       },
-      contenido: 'Conexión Científica: la gratitud activa el sistema nervioso parasimpático, mejorando la variabilidad de la frecuencia cardíaca y reduciendo la inflamación sistémica.\n\nPractica la gratitud cardiovascular diaria para proteger tu corazón.',
+      contenido: 'Conexión Científica: la gratitud activa el sistema nervioso parasimpático, mejorando la variabilidad de la frecuencia cardíaca y reduciendo la inflamación sistémica.',
       suplementacion: [
         { nombre: 'Cardiosmile', dosis: '1 sachet', horario: 'Después del almuerzo', beneficio: 'Soporte integral cardiovascular' },
         { nombre: 'Coenzima Q10', dosis: '100mg', horario: 'Con comida principal', beneficio: 'Energía celular cardíaca' },
@@ -783,7 +783,7 @@ concepto: 'Un "desliz" es solo un dato, no una definición de quién eres. La ne
         registro: { situacion_desafiante: '', reaccion_inicial: '', pausa_empatica_aplicada: '', resultado: '' },
         respuesta_tipo: 'estructurado'
       },
-      contenido: 'Cultivar relaciones sanas protege tu salud mental y evita la alimentación emocional.',
+      contenido: 'Beneficio Integral: cultivar relaciones sanas protege tu salud mental y evita que utilices la comida como consuelo ante el estrés interpersonal.',
       suplementacion: [
         { nombre: 'L-Teanina', dosis: '200mg', horario: 'Según necesidad', beneficio: 'Mantener calma en interacciones estresantes' },
         { nombre: 'GABA', dosis: 'Según indicación', horario: 'Según necesidad', beneficio: 'Reducir reactividad social y ansiedad' },
@@ -863,7 +863,7 @@ concepto: 'Un "desliz" es solo un dato, no una definición de quién eres. La ne
         },
         respuesta_tipo: 'estructurado'
       },
-      contenido: 'Principio Científico: practicar límites claros reduce el estrés social, protegiendo tu equilibrio emocional y tu presión arterial en entornos compartidos.\n\nEjemplos de guiones asertivos listos para usar:\n• Presión para comer: "Se ve delicioso, pero estoy satisfecho/a. Gracias por pensar en mí"\n• Presión para beber: "Hoy elijo no beber alcohol, prefiero mantener mi claridad mental"\n• Críticas: "Entiendo que puede parecer diferente, pero me siento muy bien así"',
+      contenido: 'Principio Científico: practicar límites claros reduce el estrés social, protegiendo tu equilibrio emocional y tu presión arterial en entornos compartidos.',
       suplementacion: [],
       principio: 'Principio Científico: practicar límites claros reduce el estrés social, protegiendo tu equilibrio emocional y tu presión arterial en entornos compartidos.',
       recursos: []
@@ -895,7 +895,7 @@ concepto: 'Un "desliz" es solo un dato, no una definición de quién eres. La ne
           kit_emergencia_social: ['botella_agua', 'L-Teanina', 'snack_saludable', 'recordatorio_visual']
         },
       },
-      contenido: 'Principio de Preparación Inteligente: no llegar con hambre física o ansiedad al evento te permite elegir desde la razón y no desde el impulso emocional.\n\nKit de Emergencia: agua · L-Teanina · snack saludable · recordatorio de tu "porqué"',
+      contenido: 'Principio de Preparación Inteligente: no llegar con hambre física o ansiedad al evento te permite elegir desde la razón y no desde el impulso emocional.',
       suplementacion: [
         { nombre: 'L-Teanina', dosis: '200mg', horario: 'Antes del evento', beneficio: 'Manejo de ansiedad aguda social' }
       ],

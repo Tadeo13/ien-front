@@ -40,6 +40,10 @@ async function obtenerPacienteConScope(usuarioId, tiendasPermitidas) {
     throw new AppError(404, 'Paciente no encontrado');
   }
 
+  if (usuario.tienda_id?.activo === false) {
+    throw new AppError(404, 'Paciente no encontrado');
+  }
+
   return usuario;
 }
 

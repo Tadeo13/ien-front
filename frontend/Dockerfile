@@ -17,18 +17,17 @@ RUN npm run build
 # ─── Stage 2: Servir con Nginx (imagen mínima) ───────────────────────────────
 FROM nginx:alpine
 
-# Backend hostname para el proxy.
-# Local (docker-compose): http://backend:3000
-# Producción (Railway/Northflank): URL pública completa, ej. https://xxx.code.run
-ARG BACKEND_HOST=http://backend:3000
-ENV BACKEND_HOST=$BACKEND_HOST
-
 # Copia el build estático
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copia y reemplaza placeholder en la config de Nginx
-COPY nginx.conf /etc/nginx/conf.d/default.conf.template
-RUN envsubst '${BACKEND_HOST}' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+# Template de Nginx -- se resuelve en runtime vía entrypoint de nginx:alpine
+# (docker-entrypoint.d/20-envsubst-on-templates.sh) usando las variables
+# BACKEND_HOST y BACKEND_PORT
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+ENV BACKEND_SCHEME=http \
+    BACKEND_HOST=backend \
+    BACKEND_PORT=3000
 
 EXPOSE 80
 

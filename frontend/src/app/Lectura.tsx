@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router";
-import { ChevronLeft, BookOpen, ShieldCheck, Pill, CheckSquare, CheckCircle2, Square, Send } from "lucide-react";
+import { ChevronLeft, BookOpen, ShieldCheck, Pill, CheckSquare, CheckCircle2, Square, Send, Lightbulb, Star, Calculator } from "lucide-react";
 import { useToneColors } from "@/hooks/useToneColors";
 import { planService } from "../services/plan.service";
 import api from "../services/api";
@@ -15,6 +15,7 @@ export default function Lectura() {
   const returnTo = navState?.returnTo || "/dashboard";
   const [scrollPct, setScrollPct] = useState(0);
   const [leccion, setLeccion] = useState<Leccion | null>(null);
+  const [conclusion, setConclusion] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [savedAnswers, setSavedAnswers] = useState<{ id: string; valor: any; tipo: string }[]>([]);
@@ -77,6 +78,7 @@ export default function Lectura() {
         const todayData = await planService.getTodayPlan();
         if (todayData.leccion) {
           setLeccion(todayData.leccion);
+          setConclusion(todayData.conclusion ?? null);
         } else {
           // Si ya se completó hoy, la lección viene como null en /today.
           // La buscamos en el historial completo de días para que el usuario pueda releerla.
@@ -126,11 +128,23 @@ export default function Lectura() {
     try {
       const respuesta_usuario = leccion.campos_respuesta?.length
         ? leccion.campos_respuesta.map(c => ({
-            id: c.id,
-            valor: answers[c.id],
-            tipo: c.tipo
-          }))
+          id: c.id,
+          valor: answers[c.id],
+          tipo: c.tipo
+        }))
         : undefined;
+
+      // Si el día tiene conclusión → ir a BloqueCierre sin completar aún
+      if (conclusion) {
+        navigate("/bloque-cierre", {
+          state: {
+            diaActual: leccion.dia_actual,
+            conclusion,
+            respuesta_usuario,
+          },
+        });
+        return;
+      }
 
       await planService.completeDay(respuesta_usuario);
       navigate(returnTo);
@@ -212,7 +226,11 @@ export default function Lectura() {
           {/* Concepto / Cita */}
           {leccion.datos_leccion?.concepto && (
             <div className="rounded-2xl p-5 mb-8" style={{ backgroundColor: tone.bg, borderLeft: `4px solid ${tone.color}` }}>
-              <p className="font-['Lora'] text-lg italic text-foreground leading-relaxed">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb size={14} style={{ color: tone.color }} />
+                <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: tone.text }}>Concepto del día</p>
+              </div>
+              <p className="font-['Lora'] text-lg italic text-foreground leading-relaxed" style={{ whiteSpace: 'pre-line' }}>
                 "{leccion.datos_leccion.concepto}"
               </p>
             </div>
@@ -221,8 +239,21 @@ export default function Lectura() {
           {/* Cuerpo principal del contenido */}
           {leccion.datos_leccion?.contenido && (
             <div className="space-y-5 mb-8">
-              <p className="text-base text-muted-foreground leading-relaxed" style={{ fontFamily: "'Lora', serif" }}>
+              <p className="text-base text-muted-foreground leading-relaxed" style={{ fontFamily: "'Lora', serif", whiteSpace: 'pre-line' }}>
                 {leccion.datos_leccion.contenido}
+              </p>
+            </div>
+          )}
+
+          {/* Principio Clave */}
+          {leccion.datos_leccion?.principio && (
+            <div className="bg-card rounded-2xl border border-border p-5 mb-8">
+              <div className="flex items-center gap-2 mb-3">
+                <Star size={14} style={{ color: tone.color }} />
+                <p className="text-[10px] font-mono uppercase tracking-wider" style={{ color: tone.text }}>Principio Clave</p>
+              </div>
+              <p className="text-sm font-['Lora'] text-muted-foreground leading-relaxed" style={{ whiteSpace: 'pre-line' }}>
+                {leccion.datos_leccion.principio}
               </p>
             </div>
           )}
@@ -232,7 +263,8 @@ export default function Lectura() {
             <div className="bg-card rounded-2xl border border-border p-5 mb-8">
               <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Ejercicio del día</p>
               <h3 className="text-sm font-semibold text-foreground mb-3">{leccion.datos_leccion.ejercicio.nombre}</h3>
-              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">{leccion.datos_leccion.ejercicio.instruccion}</p>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed" style={{ whiteSpace: 'pre-line' }}>{leccion.datos_leccion.ejercicio.instruccion}</p>
+
 
               {readOnly && savedAnswers.length > 0 && (
                 <div className="space-y-4">
@@ -303,7 +335,7 @@ export default function Lectura() {
                                     style={{
                                       backgroundColor: selected ? tone.color : tone.bg,
                                       color: selected ? 'var(--background)' : tone.color,
-                                      border: `2px solid ${selected ? tone.color : tone.soft}`,
+                                        border: `2px solid ${selected ? tone.color : tone.soft}`,
                                     }}>
                                     {val}
                                   </button>
@@ -311,6 +343,63 @@ export default function Lectura() {
                               })}
                             </div>
                             <p className="text-xs text-muted-foreground text-center">Selecciona una opción</p>
+</div>
+                        )}
+
+                        {leccion.dia_actual === 25 && campo.tipo === 'escala' && idx === 3 && (
+                            <div className="mt-6 p-4 rounded-xl bg-card border border-border">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Calculator size={18} style={{ color: tone.color }} />
+                                <span className="font-semibold text-sm" style={{ color: tone.text }}>Resumen de Agotamiento</span>
+                              </div>
+                              <div className="grid grid-cols-4 gap-3 mb-3">
+                                {leccion.campos_respuesta
+                                  .filter(c => c.tipo === 'escala')
+                                  .map((c, i) => (
+                                    <div key={c.id} className="text-center p-2 rounded-lg" style={{ backgroundColor: tone.bg }}>
+                                      <p className="text-xs text-muted-foreground mb-1">{c.etiqueta.split('—')[0]?.trim() || `Señal ${i + 1}`}</p>
+                                      <p className="text-2xl font-bold font-mono" style={{ color: answers[c.id] !== undefined ? tone.color : tone.text }}>
+                                        {answers[c.id] ?? '—'}
+                                      </p>
+                                    </div>
+                                  ))}
+                              </div>
+                              <div className="space-y-2">
+                                <div className="flex justify-between text-sm">
+                                  <span style={{ color: tone.text }}>Total</span>
+                                  <span className="font-bold font-mono" style={{ color: tone.color }}>
+                                    {(() => {
+                                      const escalaIds = leccion.campos_respuesta?.filter(c => c.tipo === 'escala').map(c => c.id) || [];
+                                      const total = escalaIds.reduce((sum, id) => sum + (answers[id] || 0), 0);
+                                      return `${total}/40`;
+                                    })()}
+                                  </span>
+                                </div>
+                                <div className="px-3 py-2 rounded-lg text-sm font-medium" style={{
+                                  backgroundColor: (() => {
+                                    const escalaIds = leccion.campos_respuesta?.filter(c => c.tipo === 'escala').map(c => c.id) || [];
+                                    const total = escalaIds.reduce((sum, id) => sum + (answers[id] || 0), 0);
+                                    if (total <= 15) return '#dcfce7';
+                                    if (total <= 25) return '#fef3c7';
+                                    return '#fee2e2';
+                                  })(),
+                                  color: (() => {
+                                    const escalaIds = leccion.campos_respuesta?.filter(c => c.tipo === 'escala').map(c => c.id) || [];
+                                    const total = escalaIds.reduce((sum, id) => sum + (answers[id] || 0), 0);
+                                    if (total <= 15) return '#166534';
+                                    if (total <= 25) return '#854d0e';
+                                    return '#991b1b';
+                                  })()
+                                }}>
+                                  {(() => {
+                                    const escalaIds = leccion.campos_respuesta?.filter(c => c.tipo === 'escala').map(c => c.id) || [];
+                                    const total = escalaIds.reduce((sum, id) => sum + (answers[id] || 0), 0);
+                                    if (total <= 15) return '✅ Energía óptima — Continúa tu rutina normal';
+                                    if (total <= 25) return '⚠️ Fatiga moderada — Implementa descanso activo';
+                                    return '🔴 Agotamiento significativo — Descanso obligatorio';
+                                  })()}
+                              </div>
+                            </div>
                           </div>
                         )}
                         {campo.tipo === 'texto' && (
@@ -352,34 +441,35 @@ export default function Lectura() {
           {/* Suplementación recomendada */}
           {leccion.datos_leccion?.suplementacion && leccion.datos_leccion.suplementacion.length > 0 && (
             <div className="bg-card rounded-2xl border border-border p-5 mb-8">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-1">
                 <Pill size={14} style={{ color: tone.color }} />
                 <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Suplementación recomendada</p>
               </div>
+              <p className="text-[10px] text-muted-foreground/70 italic mb-4 leading-tight">
+                * Estas son recomendaciones complementarias, siempre consulta a tu médico.
+              </p>
               <div className="space-y-3">
-                {leccion.datos_leccion.suplementacion.map((sup, idx: number) => (
-                  <div key={idx} className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: tone.bg }}>
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: tone.soft }}>
-                      <Pill size={13} style={{ color: tone.color }} />
+                {leccion.datos_leccion.suplementacion.map((sup, idx: number) => {
+                  return (
+                    <div key={idx} className="flex items-start gap-3 p-3 rounded-xl" style={{ backgroundColor: tone.bg }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: tone.soft }}>
+                        <Pill size={13} style={{ color: tone.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground">{sup.nombre}</p>
+                        {(sup.dosis || sup.horario) && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{sup.dosis} · {sup.horario}</p>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">{sup.beneficio}</p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-foreground">{sup.nombre}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{sup.dosis} · {sup.horario}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{sup.beneficio}</p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* Principio o recomendación */}
-          {leccion.datos_leccion?.principio && (
-            <p className="text-base font-['Lora'] italic text-muted-foreground leading-relaxed mb-10">
-              💡 {leccion.datos_leccion.principio}
-            </p>
-          )}
 
           {/* CTA */}
           {!readOnly && (
@@ -397,7 +487,9 @@ export default function Lectura() {
                   style={{ backgroundColor: tone.color }}>
                   {completando
                     ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    : <><Send size={15} /> Completar actividad</>
+                    : conclusion
+                      ? <><Send size={15} /> Continuar a reflexión final</>
+                      : <><Send size={15} /> Completar actividad</>
                   }
                 </button>
                 {!canContinue && (
