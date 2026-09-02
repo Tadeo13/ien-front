@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { ArrowRight, Heart, ChevronLeft, ChevronRight } from "lucide-react";
 import { BLOCKS } from "@/constants/program";
 import { useAuth } from "../context/AuthContext";
@@ -245,35 +245,31 @@ export default function Bienvenida() {
               />
 
               <div className="relative p-8 min-h-[260px] flex flex-col justify-between">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={block.id}
-                    custom={direction}
-                    variants={{
-                      enter: (d: number) => ({ opacity: 0, x: d * 48 }),
-                      center: { opacity: 1, x: 0 },
-                      exit: (d: number) => ({ opacity: 0, x: d * -48 }),
-                    }}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.36, ease: [0.4, 0, 0.2, 1] }}
-                    className="flex-1"
-                  >
-                    <div className="flex items-center gap-4 mb-5">
-                      <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 bg-secondary">
-                        <Icon size={32} style={{ color: tone.color }} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-mono uppercase tracking-widest mb-1 text-muted-foreground">
-                          Bloque {block.id} · Días {block.start}–{block.end}
-                        </p>
-                        <h2 className="font-['Lora'] text-2xl font-semibold text-foreground">{block.title}</h2>
-                      </div>
+                <motion.div
+                  key={block.id}
+                  custom={direction}
+                  variants={{
+                    enter: (d: number) => ({ opacity: 0, x: d * 48 }),
+                    center: { opacity: 1, x: 0 },
+                  }}
+                  initial="enter"
+                  animate="center"
+                  transition={{ duration: 0.36, ease: [0.4, 0, 0.2, 1] }}
+                  className="flex-1"
+                >
+                  <div className="flex items-center gap-4 mb-5">
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0 bg-secondary">
+                      <Icon size={32} style={{ color: tone.color }} />
                     </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed font-['Lora']">{block.desc}</p>
-                  </motion.div>
-                </AnimatePresence>
+                    <div>
+                      <p className="text-[10px] font-mono uppercase tracking-widest mb-1 text-muted-foreground">
+                        Bloque {block.id} · Días {block.start}–{block.end}
+                      </p>
+                      <h2 className="font-['Lora'] text-2xl font-semibold text-foreground">{block.title}</h2>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground text-sm leading-relaxed font-['Lora']">{block.desc}</p>
+                </motion.div>
 
                 <div className="flex items-center justify-between mt-6">
                   <button onClick={goPrev} disabled={active === 0}

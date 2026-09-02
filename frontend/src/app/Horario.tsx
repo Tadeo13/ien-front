@@ -1,6 +1,6 @@
 import { useState, useRef, type KeyboardEvent, type ChangeEvent } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Clock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
@@ -130,42 +130,37 @@ export default function Horario() {
     pad: number = 2,
   ) => (
     <div className="w-16 h-16 flex items-center justify-center">
-      <AnimatePresence mode="wait" custom={dir}>
-        {editing ? (
-          <motion.input
-            key={`${key}-input`}
-            ref={inputRef}
-            type="text"
-            inputMode="numeric"
-            value={raw}
-            onChange={onChange}
-            onBlur={onCommit}
-            onKeyDown={onKey}
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            className="w-full h-full text-center text-2xl font-mono font-bold bg-secondary rounded-xl border-2 border-primary outline-none text-foreground"
-          />
-        ) : (
-          <motion.button
-            key={`${key}-${value}`}
-            custom={dir}
-            variants={{
-              enter: (d: number) => ({ opacity: 0, x: d * 24 }),
-              center: { opacity: 1, x: 0 },
-              exit: (d: number) => ({ opacity: 0, x: d * -24 }),
-            }}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            transition={{ duration: 0.18, ease: "easeOut" }}
-            onClick={onStartEdit}
-            className="w-full h-full text-2xl font-mono font-bold rounded-xl bg-secondary/50 border border-border hover:border-foreground/25 transition-colors text-foreground"
-          >
-            {String(value).padStart(pad, "0")}
-          </motion.button>
-        )}
-      </AnimatePresence>
+      {editing ? (
+        <motion.input
+          key={`${key}-input`}
+          ref={inputRef}
+          type="text"
+          inputMode="numeric"
+          value={raw}
+          onChange={onChange}
+          onBlur={onCommit}
+          onKeyDown={onKey}
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="w-full h-full text-center text-2xl font-mono font-bold bg-secondary rounded-xl border-2 border-primary outline-none text-foreground"
+        />
+      ) : (
+        <motion.button
+          key={`${key}-${value}`}
+          custom={dir}
+          variants={{
+            enter: (d: number) => ({ opacity: 0, x: d * 24 }),
+            center: { opacity: 1, x: 0 },
+          }}
+          initial="enter"
+          animate="center"
+          transition={{ duration: 0.18, ease: "easeOut" }}
+          onClick={onStartEdit}
+          className="w-full h-full text-2xl font-mono font-bold rounded-xl bg-secondary/50 border border-border hover:border-foreground/25 transition-colors text-foreground"
+        >
+          {String(value).padStart(pad, "0")}
+        </motion.button>
+      )}
     </div>
   );
 
