@@ -27,6 +27,7 @@ import Cuenta from "./Cuenta";
 import ForgotPassword from "./ForgotPassword";
 import ResetPassword from "./ResetPassword";
 import PublicRoute from "../components/PublicRoute";
+import GlobalErrorBoundary from "../components/GlobalErrorBoundary";
 
 function AdminIndex() {
   const { user } = useAuth();
@@ -35,57 +36,62 @@ function AdminIndex() {
 }
 
 export const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/login" replace /> },
   {
-    element: <PublicRoute />,
+    errorElement: <GlobalErrorBoundary />,
     children: [
-      { path: "/login", element: <Login /> },
-      { path: "/register", element: <Register /> },
-      { path: "/forgot-password", element: <ForgotPassword /> },
-      { path: "/reset-password", element: <ResetPassword /> },
-    ],
-  },
-  { path: "/activar", element: <Activar /> },
-  { path: "/horario", element: <Horario /> },
-  {
-    element: <ProtectedRoute />,
-    children: [
-      { path: "/bienvenida", element: <Bienvenida /> },
-      { path: "/lectura", element: <Lectura /> },
-      { path: "/lectura/:diaNumero", element: <Lectura /> },
-      { path: "/bloque-intro", element: <BloqueIntro /> },
-      { path: "/bloque-cierre", element: <BloqueCierre /> },
-      { path: "/preguntas", element: <Preguntas /> },
-    ],
-  },
-  {
-    element: <ProtectedRoute />,
-    children: [
+      { path: "/", element: <Navigate to="/login" replace /> },
       {
-        element: <PatientLayout />,
+        element: <PublicRoute />,
         children: [
-          { path: "/dashboard", element: <Dashboard /> },
-          { path: "/cuenta", element: <Cuenta /> },
+          { path: "/login", element: <Login /> },
+          { path: "/register", element: <Register /> },
+          { path: "/forgot-password", element: <ForgotPassword /> },
+          { path: "/reset-password", element: <ResetPassword /> },
         ],
       },
-    ],
-  },
-  {
-    element: <AdminRoute />,
-    children: [
+      { path: "/activar", element: <Activar /> },
+      { path: "/horario", element: <Horario /> },
       {
-        element: <AdminLayout />,
+        element: <ProtectedRoute />,
         children: [
-          { path: "/admin", element: <AdminIndex /> },
-          { path: "/admin/dashboard", element: <AdminDashboard /> },
-          { path: "/admin/pacientes", element: <AdminPatients /> },
-          { path: "/admin/pacientes/:id", element: <AdminPatientDetail /> },
-          { path: "/admin/reportes", element: <AdminReports /> },
-          { path: "/admin/sucursales", element: <AdminStores /> },
-          { path: "/admin/productos", element: <AdminProducts /> },
-          { path: "/admin/codigos", element: <AdminCodes /> },
-          { path: "/admin/plantillas", element: <AdminEmails /> },
-          { path: "/admin/usuarios", element: <AdminUsuarios /> },
+          { path: "/bienvenida", element: <Bienvenida /> },
+          { path: "/lectura", element: <Lectura /> },
+          { path: "/lectura/:diaNumero", element: <Lectura /> },
+          { path: "/bloque-intro", element: <BloqueIntro /> },
+          { path: "/bloque-cierre", element: <BloqueCierre /> },
+          { path: "/preguntas", element: <Preguntas /> },
+        ],
+      },
+      {
+        element: <ProtectedRoute />,
+        children: [
+          {
+            element: <PatientLayout />,
+            children: [
+              { path: "/dashboard", element: <Dashboard /> },
+              { path: "/cuenta", element: <Cuenta /> },
+            ],
+          },
+        ],
+      },
+      {
+        element: <AdminRoute />,
+        children: [
+          {
+            element: <AdminLayout />,
+            children: [
+              { path: "/admin", element: <AdminIndex /> },
+              { path: "/admin/dashboard", element: <AdminDashboard /> },
+              { path: "/admin/pacientes", element: <AdminPatients /> },
+              { path: "/admin/pacientes/:id", element: <AdminPatientDetail /> },
+              { path: "/admin/reportes", element: <AdminReports /> },
+              { path: "/admin/sucursales", element: <AdminStores /> },
+              { path: "/admin/productos", element: <AdminProducts /> },
+              { path: "/admin/codigos", element: <AdminCodes /> },
+              { path: "/admin/plantillas", element: <AdminEmails /> },
+              { path: "/admin/usuarios", element: <AdminUsuarios /> },
+            ],
+          },
         ],
       },
     ],
