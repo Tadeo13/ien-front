@@ -10,12 +10,17 @@ export interface TiendaDocument {
   ciudad: string;
 }
 
+export interface GrupoDocument {
+  _id: string;
+  nombre: string;
+}
+
 export interface Usuario {
   id: string;
   nombre: string;
   email: string;
   rol?: 'usuario' | 'admin_negocio' | 'admin_general' | 'moderador_tienda';
-  tiendas_administradas?: string[];
+  grupo_id?: string | null;
 }
 
 // Auth
@@ -220,13 +225,14 @@ export interface Sucursal {
   nombre_tienda: string;
   ciudad: string;
   activo: boolean;
+  grupo_id?: string | GrupoDocument;
 }
 
 export interface ProductoAdmin {
   _id: string;
   nombre: string;
   descripcion?: string;
-  tienda_id?: string | TiendaDocument;
+  grupo_id?: string | GrupoDocument;
 }
 
 export interface CodigoActivacion {
@@ -243,7 +249,7 @@ export interface CreateAdminNegocioRequest {
   nombre: string;
   email: string;
   password: string;
-  tiendas_administradas: string[];
+  grupo_id: string;
 }
 
 export interface CreateAdminNegocioResponse {
@@ -251,21 +257,23 @@ export interface CreateAdminNegocioResponse {
   nombre: string;
   email: string;
   rol: string;
-  tiendas_administradas: string[];
+  grupo_id: string;
+  grupo_nombre?: string;
+  tiendas_del_grupo?: { nombre_tienda: string; ciudad: string }[];
 }
 
 export interface AdminNegocioItem {
   _id: string;
   nombre: string;
   email: string;
-  tiendas_administradas: TiendaDocument[];
+  grupo_id: GrupoDocument | string;
   fecha_registro: string;
 }
 
 export interface UpdateAdminNegocioRequest {
   nombre?: string;
   email?: string;
-  tiendas_administradas?: string[];
+  grupo_id?: string;
 }
 
 export interface CreateModeradorRequest {
