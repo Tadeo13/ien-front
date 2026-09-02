@@ -9,6 +9,7 @@ import {
   QrCode,
   Mail,
   Shield,
+  Layers,
   LogOut,
   Menu,
 } from "lucide-react";
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { label: "Productos", path: "/admin/productos", icon: Package, roles: ['admin_general', 'admin_negocio', 'moderador_tienda'] as string[] },
   { label: "Códigos", path: "/admin/codigos", icon: QrCode, roles: ['admin_general', 'admin_negocio', 'moderador_tienda'] as string[] },
   { label: "Plantillas", path: "/admin/plantillas", icon: Mail, roles: ['admin_general'] as string[] },
+  { label: "Grupos", path: "/admin/grupos", icon: Layers, roles: ['admin_general'] as string[] },
   { label: "Usuarios", path: "/admin/usuarios", icon: Shield, roles: ['admin_general', 'admin_negocio'] as string[] },
 ];
 
