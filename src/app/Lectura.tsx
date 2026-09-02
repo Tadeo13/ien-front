@@ -446,7 +446,7 @@ export default function Lectura() {
                 <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Suplementación recomendada</p>
               </div>
               <p className="text-[10px] text-muted-foreground/70 italic mb-4 leading-tight">
-                * Estas son recomendaciones complementarias, siempre consulta a tu médico.
+                * Estas son recomendaciones complementarias, siempre consulta a tu médico o nutricionista.
               </p>
               <div className="space-y-3">
                 {leccion.datos_leccion.suplementacion.map((sup, idx: number) => {

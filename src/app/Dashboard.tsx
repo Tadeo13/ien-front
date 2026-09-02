@@ -229,26 +229,6 @@ export default function Dashboard() {
         <button
           onClick={async () => {
             try {
-              await planService.autocompleteTest();
-              const [todayPlan, profileData] = await Promise.all([
-                planService.getTodayPlan(),
-                planService.getProfile()
-              ]);
-              setLeccion(todayPlan.leccion);
-              setProfile(profileData);
-              setHitoAlcanzado(null);
-            } catch (error) {
-              console.error("Error auto-completing test:", error);
-            }
-          }}
-          title="Auto-completar test inicial"
-          className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[11px] font-bold text-white bg-purple-600 hover:bg-purple-700 transition-all"
-        >
-          AUTO TEST
-        </button>
-        <button
-          onClick={async () => {
-            try {
               await planService.retreatDay();
               const [todayPlan, profileData] = await Promise.all([
                 planService.getTodayPlan(),
@@ -470,7 +450,7 @@ export default function Dashboard() {
           className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col">
           <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Suplementos · hoy</p>
           <p className="text-[10px] text-muted-foreground/70 italic mb-4 leading-tight">
-            * Estas son recomendaciones complementarias, siempre consulta a tu médico.
+            * Estas son recomendaciones complementarias, siempre consulta a tu médico o nutricionista.
           </p>
           <div className="space-y-3 flex-1">
             {(leccion?.datos_leccion?.suplementacion ?? []).map((sup, i) => (
