@@ -1,13 +1,12 @@
 # Estructura del proyecto
 
 ```
-frontend/
-├── index.html                  # HTML entry point
-├── package.json                # Dependencias y scripts
-├── vite.config.ts              # Configuración de Vite + plugins
-├── tsconfig.json               # TypeScript (strict, alias @/)
-├── postcss.config.mjs          # PostCSS (vacío, Tailwind v4 auto-configura)
-├── .env                        # VITE_API_URL=http://localhost:3000/api
+index.html                  # HTML entry point
+package.json                # Dependencias y scripts
+vite.config.ts              # Configuración de Vite + plugins
+tsconfig.json               # TypeScript (strict, alias @/)
+postcss.config.mjs          # PostCSS (vacío, Tailwind v4 auto-configura)
+.env                        # VITE_API_URL=http://localhost:3000/api
 │
 ├── src/
 │   ├── main.tsx                # Punto de entrada (renderiza <App />)
