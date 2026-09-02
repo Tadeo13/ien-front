@@ -78,7 +78,7 @@ export default function Preguntas() {
     }
   };
 
-  const prev = () => setCurrent((c) => Math.max(0, c));
+  const prev = () => setCurrent((c) => Math.max(0, c - 1));
 
   const handleSubmit = async () => {
     setSubmitting(true);
