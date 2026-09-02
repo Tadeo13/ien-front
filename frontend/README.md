@@ -29,10 +29,11 @@ npm run typecheck # Verificación de tipos
 | Variable | Ámbito | Default | Descripción |
 |----------|--------|---------|-------------|
 | `VITE_API_URL` | Build-time (`.env` o build-arg) | `http://localhost:3000/api` | URL base del backend a la que llama el navegador. En Docker se compila con `/api` (relativa) para que Nginx haga el proxy. |
-| `BACKEND_HOST` | Runtime (contenedor Nginx) | `backend` | Host interno del backend hacia el que Nginx proxyfía `/api/*`. |
+| `BACKEND_SCHEME` | Runtime (contenedor Nginx) | `http` | Esquema del backend al que Nginx proxyfía `/api/*` (`http` o `https`). |
+| `BACKEND_HOST` | Runtime (contenedor Nginx) | `backend` | Host del backend hacia el que Nginx proxyfía `/api/*`. |
 | `BACKEND_PORT` | Runtime (contenedor Nginx) | `3000` | Puerto del backend para el proxy de Nginx. |
 
-En desarrollo local, basta con un `.env` con `VITE_API_URL=http://localhost:3000/api`. En producción (Docker), Nginx resuelve `http://${BACKEND_HOST}:${BACKEND_PORT}` desde el template `nginx.conf` (`/etc/nginx/templates/default.conf.template`); `BACKEND_HOST`/`BACKEND_PORT` se definen como `environment` en `docker-compose.yml`.
+En desarrollo local, basta con un `.env` con `VITE_API_URL=http://localhost:3000/api`. En producción (Docker), Nginx resuelve `${BACKEND_SCHEME}://${BACKEND_HOST}:${BACKEND_PORT}` desde el template `nginx.conf` (`/etc/nginx/templates/default.conf.template`); las variables se pasan en runtime al contenedor, p. ej. `docker run -e BACKEND_SCHEME=https -e BACKEND_HOST=<BACKEND>.northflank.app -e BACKEND_PORT=443 ien-front`.
 
 ## Estructura del proyecto
 
