@@ -1,27 +1,31 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router";
+import { useNavigate } from "react-router";
 import { ArrowRight, Scan, ChevronLeft } from "lucide-react";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import CodeInput from "../components/CodeInput";
+import { authService } from "../services/auth.service";
 
 export default function Activar() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const regData = (location.state as { nombre?: string; email?: string; password?: string }) || {};
   const [codigoActivacion, setCodigoActivacion] = useState("");
+  const [error, setError] = useState("");
+  const [validating, setValidating] = useState(false);
 
-  const canContinue = codigoActivacion.length === 7 && (regData.nombre && regData.email && regData.password);
+  const canContinue = codigoActivacion.length === 7;
 
-  const handleSubmit = () => {
-    if (!canContinue) return;
-    navigate("/horario", {
-      state: {
-        nombre: regData.nombre,
-        email: regData.email,
-        password: regData.password,
-        codigo_activacion: codigoActivacion.toUpperCase(),
-      },
-    });
+  const handleSubmit = async () => {
+    if (!canContinue || validating) return;
+    setValidating(true);
+    setError("");
+    try {
+      await authService.validateCode({ codigo_activacion: codigoActivacion.toUpperCase() });
+      navigate("/register", {
+        state: { codigo_activacion: codigoActivacion.toUpperCase() },
+      });
+    } catch (err: any) {
+      setError(err.response?.data?.error || "Código inválido o inactivo.");
+      setValidating(false);
+    }
   };
 
   return (
@@ -30,14 +34,14 @@ export default function Activar() {
       {/* Header */}
       <header className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/register")} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate("/login")} className="text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft size={20} />
           </button>
           <img src="/imports/logo_ien-03.png" alt="IEN" className="h-10 w-auto" />
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground">
-            <span className="w-4 h-4 rounded-full bg-foreground text-background text-[9px] flex items-center justify-center font-bold">2</span>
+            <span className="w-4 h-4 rounded-full bg-foreground text-background text-[9px] flex items-center justify-center font-bold">1</span>
             Activación de productos
           </div>
           <ThemeToggle />
@@ -48,7 +52,7 @@ export default function Activar() {
         <div className="max-w-lg w-full">
 
           <div className="mb-8">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Paso 2 de 3</p>
+            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Paso 1 de 3</p>
             <h1 className="font-['Lora'] text-2xl font-semibold text-foreground">Activa tus productos</h1>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               Introduce el código de activación que recibiste para comenzar el programa.
@@ -73,14 +77,20 @@ export default function Activar() {
             </div>
           </div>
 
+          {error && (
+            <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive mb-4">
+              {error}
+            </p>
+          )}
+
           {/* Continue */}
           <button
-            disabled={!canContinue}
+            disabled={!canContinue || validating}
             onClick={handleSubmit}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold text-primary-foreground bg-foreground transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Siguiente
-            <ArrowRight size={16} />
+            {validating ? "Validando…" : "Siguiente"}
+            {!validating && <ArrowRight size={16} />}
           </button>
         </div>
       </div>

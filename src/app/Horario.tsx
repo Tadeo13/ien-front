@@ -169,7 +169,7 @@ export default function Horario() {
 
       <header className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/activar", { state: regData })} className="text-muted-foreground hover:text-foreground transition-colors">
+          <button onClick={() => navigate("/register", { state: { codigo_activacion: regData.codigo_activacion } })} className="text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft size={20} />
           </button>
           <img src="/imports/logo_ien-03.png" alt="IEN" className="h-10 w-auto" />
