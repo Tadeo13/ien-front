@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight, CheckCircle2, Send, ShieldCheck, BookOpen } 
 import { useToneColors, useGray } from "../hooks/useToneColors";
 import { planService } from "../services/plan.service";
 import type { SetupTestResponse } from "../types/api.types";
+import Footer from "../components/layout/Footer";
 
 const TONO = "red" as const;
 
@@ -264,6 +265,8 @@ export default function Preguntas() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

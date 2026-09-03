@@ -4,6 +4,7 @@ import { motion } from "motion/react";
 import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Clock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
+import Footer from "../components/layout/Footer";
 
 export default function Horario() {
   const navigate = useNavigate();
@@ -165,7 +166,7 @@ export default function Horario() {
   );
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       <header className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
@@ -297,6 +298,7 @@ export default function Horario() {
           )}
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

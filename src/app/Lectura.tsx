@@ -5,6 +5,7 @@ import { useToneColors } from "@/hooks/useToneColors";
 import { planService } from "../services/plan.service";
 import api from "../services/api";
 import type { Leccion } from "../types/api.types";
+import Footer from "../components/layout/Footer";
 
 export default function Lectura() {
   const navigate = useNavigate();
@@ -503,6 +504,7 @@ export default function Lectura() {
 
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

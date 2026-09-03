@@ -4,6 +4,7 @@ import { ArrowRight, Scan, ChevronLeft } from "lucide-react";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import CodeInput from "../components/CodeInput";
 import { authService } from "../services/auth.service";
+import Footer from "../components/layout/Footer";
 
 export default function Activar() {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ export default function Activar() {
   };
 
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Header */}
       <header className="bg-card border-b border-border px-6 py-3 flex items-center justify-between">
@@ -94,6 +95,7 @@ export default function Activar() {
           </button>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

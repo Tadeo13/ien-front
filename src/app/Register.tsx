@@ -2,6 +2,7 @@ import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { ArrowRight, CheckCircle2, Eye, EyeOff, Lock, Mail, Sparkles, UserRound } from "lucide-react";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
+import Footer from "../components/layout/Footer";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -46,7 +47,7 @@ export default function Register() {
 
   return (
     <div
-      className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(217,160,48,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(77,170,160,0.16),_transparent_22%),var(--background)] p-4 sm:p-6 lg:p-8"
+      className="flex flex-col min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(217,160,48,0.16),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(77,170,160,0.16),_transparent_22%),var(--background)] p-4 sm:p-6 lg:p-8"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       <div className="fixed top-4 right-4 z-50">
@@ -211,6 +212,7 @@ export default function Register() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

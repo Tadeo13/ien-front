@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import Footer from "./Footer";
 
 const NAV_ITEMS = [
   { label: "Dashboard", path: "/admin/dashboard", icon: LayoutDashboard, roles: ['admin_general', 'admin_negocio'] as string[] },
@@ -118,6 +119,7 @@ export default function AdminLayout() {
           <main className="flex-1 overflow-y-auto">
             <Outlet />
           </main>
+          <Footer />
         </div>
       </div>
     </div>
