@@ -4,6 +4,12 @@ export default function Footer() {
     <footer className="w-full border-t border-border px-6 py-4 mt-auto">
       <p className="text-center text-[10px] text-muted-foreground" style={{ fontFamily: "'Inter', sans-serif" }}>
         © {year} Iridium. Todos los derechos reservados.
+        <br />
+        Copyright
+        <br />
+        Lic. Gladys Patiño
+        <br />
+        Nut Clínica Funcional-Int Emocional en Nut-Neurociencias
       </p>
     </footer>
   );
