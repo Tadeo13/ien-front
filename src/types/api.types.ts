@@ -229,13 +229,13 @@ export interface PerfilPaciente {
 }
 
 export interface ProgresoPaciente {
-  estado: 'activo' | 'completado' | 'abandonado';
+  estado: 'activo' | 'completado' | 'abandonado' | 'sin_iniciar';
   dia_actual: number;
   racha_dias: number;
   racha_maxima: number;
   hitos_alcanzados: number[];
-  fecha_inicio: string;
-  ultima_fecha_actividad: string;
+  fecha_inicio: string | null;
+  ultima_fecha_actividad: string | null;
   test_inicial: any;
   progreso_diario: any[];
 }

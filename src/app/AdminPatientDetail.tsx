@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { ChevronLeft, Mail, Store, Calendar, Activity, Zap, Target } from "lucide-react";
 import { adminService } from "../services/admin.service";
 import type { PerfilPaciente, ProgresoPaciente, TestInicialResponse, DiaPlan } from "../types/api.types";
-import { C } from "../constants/colors";
+import { C, GRAY } from "../constants/colors";
 import TestInicialResultados from "../components/TestInicialResultados";
 import ActividadesDiariasLista from "../components/ActividadesDiariasLista";
 
@@ -71,9 +71,11 @@ export default function AdminPatientDetail() {
   };
 
   const statusColor = (estado: string) => {
-    if (estado === "activo") return { bg: C.green.bg, text: C.green.text, border: C.green.border };
-    if (estado === "completado") return { bg: C.yellow.bg, text: C.yellow.text, border: C.yellow.border };
-    return { bg: C.red.bg, text: C.red.text, border: C.red.border };
+    if (estado === "activo") return { bg: C.green.bg, text: C.green.text, border: C.green.border, label: "Activo" };
+    if (estado === "completado") return { bg: C.yellow.bg, text: C.yellow.text, border: C.yellow.border, label: "Completado" };
+    if (estado === "abandonado") return { bg: C.red.bg, text: C.red.text, border: C.red.border, label: "Abandonado" };
+    if (estado === "sin_iniciar") return { bg: GRAY.light, text: GRAY.base, border: GRAY.mid, label: "Sin iniciar" };
+    return { bg: GRAY.light, text: GRAY.base, border: GRAY.mid, label: estado };
   };
 
   if (loading) {
@@ -111,7 +113,7 @@ export default function AdminPatientDetail() {
           </div>
           {progress && sc && (
             <span className="inline-flex items-center rounded-full px-4 py-1.5 text-xs font-semibold" style={{ backgroundColor: sc.bg, color: sc.text, border: `1px solid ${sc.border}` }}>
-              {progress.estado}
+              {sc.label}
             </span>
           )}
         </div>
@@ -231,13 +233,13 @@ export default function AdminPatientDetail() {
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="rounded-2xl bg-background p-4">
                     <p className="text-[10px] font-mono uppercase text-muted-foreground">Fecha de inicio</p>
-                    <p className="text-sm font-semibold text-foreground mt-1">{new Date(progress.fecha_inicio).toLocaleDateString()}</p>
+                    <p className="text-sm font-semibold text-foreground mt-1">{progress.fecha_inicio ? new Date(progress.fecha_inicio).toLocaleDateString() : "Sin iniciar"}</p>
                   </div>
                   <div className="rounded-2xl bg-background p-4">
                     <p className="text-[10px] font-mono uppercase text-muted-foreground">Última actividad</p>
-                    <p className="text-sm font-semibold text-foreground mt-1">{new Date(progress.ultima_fecha_actividad).toLocaleDateString()}</p>
+                    <p className="text-sm font-semibold text-foreground mt-1">{progress.ultima_fecha_actividad ? new Date(progress.ultima_fecha_actividad).toLocaleDateString() : "Sin actividad"}</p>
                   </div>
-                  {progress.hitos_alcanzados.length > 0 && (
+                  {progress.hitos_alcanzados?.length > 0 && (
                     <div className="rounded-2xl bg-background p-4 sm:col-span-2">
                       <p className="text-[10px] font-mono uppercase text-muted-foreground">Hitos alcanzados</p>
                       <div className="flex flex-wrap gap-2 mt-2">
