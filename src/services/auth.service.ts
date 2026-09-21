@@ -85,4 +85,12 @@ export const authService = {
     const response = await api.post<{ mensaje: string }>('/auth/change-password', { current_password, nueva_password });
     return response.data;
   },
+
+  updateReminderSchedule: async (hora_recordatorio: number, minuto_recordatorio: number) => {
+    const response = await api.post<{ hora_recordatorio: number; minuto_recordatorio: number }>(
+      '/auth/reminder-schedule',
+      { hora_recordatorio, minuto_recordatorio }
+    );
+    return response.data;
+  },
 };

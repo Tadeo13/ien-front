@@ -21,6 +21,8 @@ export interface Usuario {
   email: string;
   rol?: 'usuario' | 'admin_negocio' | 'admin_general' | 'moderador_tienda';
   grupo_id?: string | null;
+  hora_recordatorio?: number;
+  minuto_recordatorio?: number;
 }
 
 // Auth

@@ -1,10 +1,10 @@
-import { useState, useRef, type KeyboardEvent, type ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router";
-import { motion } from "motion/react";
-import { ArrowRight, ChevronLeft, ChevronRight, Loader2, Clock } from "lucide-react";
+import { ArrowRight, ChevronLeft, Loader2, Clock } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { ThemeToggle } from "../components/ui/ThemeToggle";
 import Footer from "../components/layout/Footer";
+import TimePicker from "../components/ui/TimePicker";
 
 export default function Horario() {
   const navigate = useNavigate();
@@ -20,78 +20,22 @@ export default function Horario() {
 
   const [hour, setHour] = useState(10);
   const [minute, setMinute] = useState(0);
-  const [hourDir, setHourDir] = useState(1);
-  const [minDir, setMinDir] = useState(1);
-  const [editingHour, setEditingHour] = useState(false);
-  const [editingMinute, setEditingMinute] = useState(false);
-  const [rawHour, setRawHour] = useState("");
-  const [rawMinute, setRawMinute] = useState("");
-  const hourInputRef = useRef<HTMLInputElement>(null);
-  const minuteInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const canSubmit = regData.nombre && regData.email && regData.password && regData.codigo_activacion;
+  const canSubmit = !!(regData.nombre && regData.email && regData.password && regData.codigo_activacion);
 
-  const cycleHour = (dir: 1 | -1) => {
-    setHourDir(dir);
-    setHour((prev) => {
-      const next = prev + dir;
-      if (next < 0) return 23;
-      if (next > 23) return 0;
-      return next;
+  useEffect(() => {
+    if (canSubmit || submitting) return;
+    navigate(regData.codigo_activacion ? "/register" : "/activar", {
+      replace: true,
+      state: regData.codigo_activacion ? { codigo_activacion: regData.codigo_activacion } : undefined,
     });
-  };
-
-  const cycleMinute = (dir: 1 | -1) => {
-    setMinDir(dir);
-    setMinute((prev) => (prev === 0 ? 30 : 0));
-  };
-
-  const startEditHour = () => {
-    setRawHour(String(hour));
-    setEditingHour(true);
-    setTimeout(() => hourInputRef.current?.select(), 0);
-  };
-
-  const startEditMinute = () => {
-    setRawMinute(String(minute));
-    setEditingMinute(true);
-    setTimeout(() => minuteInputRef.current?.select(), 0);
-  };
-
-  const commitHour = () => {
-    const n = parseInt(rawHour);
-    if (!isNaN(n) && n >= 0 && n <= 23) setHour(n);
-    setEditingHour(false);
-  };
-
-  const commitMinute = () => {
-    const n = parseInt(rawMinute);
-    if (n === 0 || n === 30) {
-      setMinute(n);
-    } else if (n < 15) {
-      setMinute(0);
-    } else {
-      setMinute(30);
-    }
-    setEditingMinute(false);
-  };
-
-  const keyHour = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") commitHour();
-    if (e.key === "Escape") setEditingHour(false);
-  };
-
-  const keyMinute = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") commitMinute();
-    if (e.key === "Escape") setEditingMinute(false);
-  };
+  }, [canSubmit, submitting, navigate, regData.codigo_activacion]);
 
   const handleSkip = () => {
     setHour(10);
     setMinute(0);
-    setHourDir(-1);
   };
 
   const handleSubmit = async () => {
@@ -114,56 +58,6 @@ export default function Horario() {
       setSubmitting(false);
     }
   };
-
-  const timeDisplay = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-
-  const numberBox = (
-    value: number,
-    dir: number,
-    editing: boolean,
-    raw: string,
-    onStartEdit: () => void,
-    onChange: (e: ChangeEvent<HTMLInputElement>) => void,
-    onCommit: () => void,
-    onKey: (e: KeyboardEvent<HTMLInputElement>) => void,
-    inputRef: React.RefObject<HTMLInputElement | null>,
-    key: string,
-    pad: number = 2,
-  ) => (
-    <div className="w-16 h-16 flex items-center justify-center">
-      {editing ? (
-        <motion.input
-          key={`${key}-input`}
-          ref={inputRef}
-          type="text"
-          inputMode="numeric"
-          value={raw}
-          onChange={onChange}
-          onBlur={onCommit}
-          onKeyDown={onKey}
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="w-full h-full text-center text-2xl font-mono font-bold bg-secondary rounded-xl border-2 border-primary outline-none text-foreground"
-        />
-      ) : (
-        <motion.button
-          key={`${key}-${value}`}
-          custom={dir}
-          variants={{
-            enter: (d: number) => ({ opacity: 0, x: d * 24 }),
-            center: { opacity: 1, x: 0 },
-          }}
-          initial="enter"
-          animate="center"
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          onClick={onStartEdit}
-          className="w-full h-full text-2xl font-mono font-bold rounded-xl bg-secondary/50 border border-border hover:border-foreground/25 transition-colors text-foreground"
-        >
-          {String(value).padStart(pad, "0")}
-        </motion.button>
-      )}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
@@ -191,7 +85,7 @@ export default function Horario() {
             <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Paso 3 de 3</p>
             <h1 className="font-['Lora'] text-2xl font-semibold text-foreground">Elegí tu horario</h1>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
-              Recibirás tu recordatorio diario a esta hora.
+              Recibirás tu recordatorio diario a esta hora cuando tengas un día pendiente.
             </p>
           </div>
 
@@ -203,69 +97,12 @@ export default function Horario() {
               <p className="text-sm font-semibold text-foreground">Hora del recordatorio</p>
             </div>
 
-            {/* Hora */}
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-3 text-center">
-              Hora
-            </p>
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <button
-                onClick={() => cycleHour(-1)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {numberBox(hour, hourDir, editingHour, rawHour, startEditHour, (e: ChangeEvent<HTMLInputElement>) => setRawHour(e.target.value.replace(/[^0-9]/g, "")), commitHour, keyHour, hourInputRef, "hour")}
-              <button
-                onClick={() => cycleHour(1)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Minuto */}
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-3 text-center">
-              Minuto
-            </p>
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <button
-                onClick={() => cycleMinute(-1)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors"
-              >
-                <ChevronLeft size={16} />
-              </button>
-              {numberBox(minute, minDir, editingMinute, rawMinute, startEditMinute, (e: ChangeEvent<HTMLInputElement>) => setRawMinute(e.target.value.replace(/[^0-9]/g, "")), commitMinute, keyMinute, minuteInputRef, "min")}
-              <button
-                onClick={() => cycleMinute(1)}
-                className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors"
-              >
-                <ChevronRight size={16} />
-              </button>
-            </div>
-
-            {/* Dots de horas */}
-            <div className="flex items-center justify-center gap-1.5 mb-4">
-              {Array.from({ length: 24 }, (_, h) => (
-                <button
-                  key={h}
-                  onClick={() => setHour(h)}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    h === hour ? "w-5 bg-primary" : "w-1.5 bg-muted hover:bg-muted-foreground/30"
-                  }`}
-                />
-              ))}
-            </div>
-
-            <p className="text-center text-xs text-muted-foreground">
-              {timeDisplay} ·{" "}
-              {hour === 0 && minute === 0
-                ? "Medianoche"
-                : hour === 12 && minute === 0
-                ? "Mediodía"
-                : hour < 12
-                ? "AM"
-                : "PM"}
-            </p>
+            <TimePicker
+              hora={hour}
+              minuto={minute}
+              onChange={({ hora, minuto }) => { setHour(hora); setMinute(minuto); }}
+              disabled={submitting}
+            />
           </div>
 
           {/* Sin preferencia */}

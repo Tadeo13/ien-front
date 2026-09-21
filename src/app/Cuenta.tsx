@@ -1,8 +1,56 @@
-import { useState } from "react";
-import { ArrowLeft, Eye, EyeOff, KeyRound, CheckCircle, Shield } from "lucide-react";
+import { useState, useEffect, type ReactNode } from "react";
+import { ArrowLeft, Eye, EyeOff, KeyRound, CheckCircle, Shield, ChevronDown } from "lucide-react";
 import { useNavigate } from "react-router";
 import { authService } from "../services/auth.service";
 import { useAuth } from "../context/AuthContext";
+import TimePicker from "../components/ui/TimePicker";
+
+function formatHora(hora: number, minuto: number) {
+  return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
+}
+
+function CollapsibleCard({
+  eyebrow,
+  title,
+  subtitle,
+  collapsedHint,
+  defaultOpen = true,
+  children,
+}: {
+  eyebrow: string;
+  title: string;
+  subtitle?: string;
+  collapsedHint?: string;
+  defaultOpen?: boolean;
+  children: ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+
+  return (
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="w-full flex items-start justify-between gap-4 p-5 text-left transition-colors hover:bg-secondary/40"
+      >
+        <div className="min-w-0">
+          <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">{eyebrow}</p>
+          <p className="font-['Lora'] text-lg font-semibold text-foreground">{title}</p>
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
+          {!open && collapsedHint && (
+            <p className="mt-2 text-xs font-medium text-primary">{collapsedHint}</p>
+          )}
+        </div>
+        <ChevronDown
+          size={18}
+          className={`mt-1 shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && <div className="px-5 pb-5">{children}</div>}
+    </div>
+  );
+}
 
 export default function Cuenta() {
   const navigate = useNavigate();
@@ -16,6 +64,40 @@ export default function Cuenta() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
+
+  const [reminderHour, setReminderHour] = useState(10);
+  const [reminderMinute, setReminderMinute] = useState(0);
+  const [reminderLoading, setReminderLoading] = useState(true);
+  const [reminderSaving, setReminderSaving] = useState(false);
+  const [reminderSuccess, setReminderSuccess] = useState(false);
+  const [reminderError, setReminderError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    authService.getProfile()
+      .then((profile) => {
+        if (!active) return;
+        setReminderHour(typeof profile.hora_recordatorio === "number" ? profile.hora_recordatorio : 10);
+        setReminderMinute(typeof profile.minuto_recordatorio === "number" ? profile.minuto_recordatorio : 0);
+      })
+      .catch(() => {})
+      .finally(() => { if (active) setReminderLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const handleSaveReminder = async () => {
+    setReminderSaving(true);
+    setReminderError("");
+    setReminderSuccess(false);
+    try {
+      await authService.updateReminderSchedule(reminderHour, reminderMinute);
+      setReminderSuccess(true);
+    } catch (err: any) {
+      setReminderError(err.response?.data?.error || "Error al guardar el horario.");
+    } finally {
+      setReminderSaving(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +148,64 @@ export default function Cuenta() {
         </div>
       </div>
 
-      {/* Change password */}
-      <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
-        <div className="mb-6">
-          <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-1">Seguridad</p>
-          <p className="font-['Lora'] text-lg font-semibold text-foreground">Cambiar contraseña</p>
-        </div>
+      {/* Reminder schedule */}
+      <CollapsibleCard
+        eyebrow="Recordatorios"
+        title="Horario del recordatorio diario"
+        subtitle="Te enviamos un correo a esta hora cuando tenés un día pendiente del programa."
+        collapsedHint={reminderLoading ? undefined : `Recordatorio a las ${formatHora(reminderHour, reminderMinute)}`}
+      >
+        {reminderLoading ? (
+          <div className="flex justify-center py-8">
+            <span className="h-5 w-5 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground" />
+          </div>
+        ) : (
+          <>
+            <TimePicker
+              hora={reminderHour}
+              minuto={reminderMinute}
+              onChange={({ hora, minuto }) => {
+                setReminderHour(hora);
+                setReminderMinute(minuto);
+                setReminderSuccess(false);
+              }}
+              disabled={reminderSaving}
+            />
 
+            {reminderSuccess && (
+              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-accent">
+                <CheckCircle size={13} />
+                Horario actualizado
+              </p>
+            )}
+            {reminderError && (
+              <p className="mt-2 rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                {reminderError}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onClick={handleSaveReminder}
+              disabled={reminderSaving}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background shadow-lg transition-all hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {reminderSaving ? (
+                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              ) : (
+                "Guardar horario"
+              )}
+            </button>
+          </>
+        )}
+      </CollapsibleCard>
+
+      {/* Change password */}
+      <CollapsibleCard
+        eyebrow="Seguridad"
+        title="Cambiar contraseña"
+        collapsedHint={success ? "Contraseña actualizada" : undefined}
+      >
         {success ? (
           <div className="text-center py-8">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-accent/10">
@@ -168,7 +301,7 @@ export default function Cuenta() {
             </button>
           </form>
         )}
-      </div>
+      </CollapsibleCard>
     </div>
   );
 }
