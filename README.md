@@ -6,6 +6,8 @@ Panel de administración y programa de 30 días de inteligencia emocional aplica
 
 ## Quick start
 
+Requiere Node.js 22.12+ (rama 22) o Node.js 24 LTS. Docker utiliza Node.js 24 para compilar.
+
 ```bash
 npm install
 cp .env.example .env    # VITE_API_URL=http://localhost:3000/api (backend local)
@@ -17,13 +19,13 @@ npm run dev
 | Capa | Tecnología |
 |------|-----------|
 | Framework | React 18.3 + TypeScript 6 (strict) |
-| Build | Vite 6.3 |
-| Routing | react-router 7.13 (createBrowserRouter) |
-| UI | Tailwind CSS 4.1 |
+| Build | Vite 8.3 |
+| Routing | react-router 7.18 (createBrowserRouter, rutas bajo demanda) |
+| UI | Tailwind CSS 4.3 |
 | Charts | Recharts 2.15 |
 | Animaciones | motion 12.23 (Framer Motion) |
 | Iconos | lucide-react 0.487 |
-| HTTP | axios 1.18 |
+| HTTP | axios 1.20 |
 | Fonts | Inter, Lora, DM Mono |
 
 ## Scripts
@@ -32,7 +34,14 @@ npm run dev
 npm run dev       # Servidor de desarrollo
 npm run build     # Build producción
 npm run typecheck # Verificación de tipos
+npm test          # Pruebas de interacción y regresión (Vitest)
+npm run test:watch # Pruebas en modo interactivo
+npm run test:e2e   # Pruebas en navegador (Playwright)
 ```
+
+Para las pruebas de navegador, ejecuta antes `npx playwright install chromium`.
+También se puede usar un navegador instalado con `PLAYWRIGHT_CHANNEL=msedge` o `chrome`.
+Las pruebas utilizan una API simulada y un servidor local independiente en el puerto 4183.
 
 ## Entorno
 
