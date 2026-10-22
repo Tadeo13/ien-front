@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { authService } from "../services/auth.service";
 import { useAuth } from "../context/AuthContext";
 import TimePicker from "../components/ui/TimePicker";
+import ErrorNotice from "../components/ui/ErrorNotice";
 
 function formatHora(hora: number, minuto: number) {
   return `${String(hora).padStart(2, "0")}:${String(minuto).padStart(2, "0")}`;
@@ -71,19 +72,23 @@ export default function Cuenta() {
   const [reminderSaving, setReminderSaving] = useState(false);
   const [reminderSuccess, setReminderSuccess] = useState(false);
   const [reminderError, setReminderError] = useState("");
+  const [profileError, setProfileError] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let active = true;
+    setReminderLoading(true);
+    setProfileError(false);
     authService.getProfile()
       .then((profile) => {
         if (!active) return;
         setReminderHour(typeof profile.hora_recordatorio === "number" ? profile.hora_recordatorio : 10);
         setReminderMinute(typeof profile.minuto_recordatorio === "number" ? profile.minuto_recordatorio : 0);
       })
-      .catch(() => {})
+      .catch(() => { if (active) setProfileError(true); })
       .finally(() => { if (active) setReminderLoading(false); });
     return () => { active = false; };
-  }, []);
+  }, [retry]);
 
   const handleSaveReminder = async () => {
     setReminderSaving(true);
@@ -117,6 +122,9 @@ export default function Cuenta() {
     setLoading(true);
     try {
       await authService.changePassword(currentPassword, newPassword);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
       setSuccess(true);
     } catch (err: any) {
       setError(err.response?.data?.error || "Error al cambiar la contraseña.");
@@ -153,12 +161,14 @@ export default function Cuenta() {
         eyebrow="Recordatorios"
         title="Horario del recordatorio diario"
         subtitle="Te enviamos un correo a esta hora cuando tenés un día pendiente del programa."
-        collapsedHint={reminderLoading ? undefined : `Recordatorio a las ${formatHora(reminderHour, reminderMinute)}`}
+        collapsedHint={reminderLoading || profileError ? undefined : `Recordatorio a las ${formatHora(reminderHour, reminderMinute)}`}
       >
         {reminderLoading ? (
           <div className="flex justify-center py-8">
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-foreground/20 border-t-foreground" />
           </div>
+        ) : profileError ? (
+          <ErrorNotice message="No se pudo cargar tu horario. Reintenta antes de modificarlo." onRetry={() => setRetry(n => n + 1)} />
         ) : (
           <>
             <TimePicker
@@ -173,13 +183,13 @@ export default function Cuenta() {
             />
 
             {reminderSuccess && (
-              <p className="mt-2 flex items-center justify-center gap-1.5 text-xs font-medium text-accent">
+              <p role="status" className="mt-2 flex items-center justify-center gap-1.5 text-sm font-medium text-accent">
                 <CheckCircle size={13} />
                 Horario actualizado
               </p>
             )}
             {reminderError && (
-              <p className="mt-2 rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              <p role="alert" className="mt-2 rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                 {reminderError}
               </p>
             )}
@@ -221,21 +231,24 @@ export default function Cuenta() {
             </button>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} aria-describedby={error ? "account-password-error" : undefined} className="space-y-4">
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="current-password" className="mb-2 block text-xs font-semibold text-foreground">
                 Contraseña actual
               </label>
               <div className="relative">
                 <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="current-password"
+                  autoComplete="current-password"
+                  required
                   type={showCurrent ? "text" : "password"}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-12 text-sm text-foreground placeholder-muted-foreground/50 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                 />
-                <button type="button" onClick={() => setShowCurrent(!showCurrent)}
+                <button type="button" aria-label={showCurrent ? "Ocultar contraseña actual" : "Mostrar contraseña actual"} onClick={() => setShowCurrent(!showCurrent)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground">
                   {showCurrent ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -243,19 +256,23 @@ export default function Cuenta() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="new-password" className="mb-2 block text-xs font-semibold text-foreground">
                 Nueva contraseña
               </label>
               <div className="relative">
                 <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="new-password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
                   type={showNew ? "text" : "password"}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-12 text-sm text-foreground placeholder-muted-foreground/50 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                 />
-                <button type="button" onClick={() => setShowNew(!showNew)}
+                <button type="button" aria-label={showNew ? "Ocultar nueva contraseña" : "Mostrar nueva contraseña"} onClick={() => setShowNew(!showNew)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground">
                   {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -263,19 +280,23 @@ export default function Cuenta() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="confirm-password" className="mb-2 block text-xs font-semibold text-foreground">
                 Confirmar nueva contraseña
               </label>
               <div className="relative">
                 <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="confirm-password"
+                  autoComplete="new-password"
+                  required
+                  minLength={8}
                   type={showNew ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
                   className="w-full rounded-2xl border border-border bg-card py-3 pl-11 pr-12 text-sm text-foreground placeholder-muted-foreground/50 shadow-sm transition-all focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                 />
-                <button type="button" onClick={() => setShowNew(!showNew)}
+                <button type="button" aria-label={showNew ? "Ocultar confirmación" : "Mostrar confirmación"} onClick={() => setShowNew(!showNew)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground">
                   {showNew ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
@@ -283,7 +304,7 @@ export default function Cuenta() {
             </div>
 
             {error && (
-              <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              <p id="account-password-error" role="alert" className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                 {error}
               </p>
             )}

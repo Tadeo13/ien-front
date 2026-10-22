@@ -146,14 +146,17 @@ export default function ForgotPassword() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} aria-describedby={error ? "forgot-error" : undefined} className="space-y-4">
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="forgot-email" className="mb-2 block text-xs font-semibold text-foreground">
                 Correo electrónico
               </label>
               <div className="relative">
                 <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="forgot-email"
+                  autoComplete="email"
+                  required
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -164,7 +167,7 @@ export default function ForgotPassword() {
             </div>
 
             {error && (
-              <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              <p id="forgot-error" role="alert" className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                 {error}
               </p>
             )}

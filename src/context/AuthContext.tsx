@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, ReactNode, useCallback } from 'react';
 import { Usuario } from '../types/api.types';
 import { authService } from '../services/auth.service';
+import { clearSession } from '../services/api';
 
 interface AuthContextType {
   user: Usuario | null;
@@ -22,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<Usuario | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const sessionRevision = useRef(0);
 
   const setUserData = useCallback((userData: Usuario | null) => {
     setUser(userData);
@@ -31,6 +33,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    const onExpired = () => {
+      sessionRevision.current += 1;
+      setUser(null);
+      setIsAuthenticated(false);
+    };
+    window.addEventListener('ien:session-expired', onExpired);
+    return () => window.removeEventListener('ien:session-expired', onExpired);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    const revision = sessionRevision.current;
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem('access_token');
@@ -45,30 +59,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         try {
           const profile = await authService.getProfile();
-          setUserData(profile);
-        } catch {
+          if (active && revision === sessionRevision.current) setUserData(profile);
+        } catch (error: any) {
+          if (error.response?.status === 401 || !localStorage.getItem('access_token')) throw error;
           const storedUser = localStorage.getItem('usuario');
           if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            if (active && revision === sessionRevision.current) setUser(JSON.parse(storedUser));
           } else {
             throw new Error('No user data');
           }
         }
-        setIsAuthenticated(true);
+        if (active && revision === sessionRevision.current && localStorage.getItem('access_token')) setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth initialization error', error);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('usuario');
+        if (active && revision === sessionRevision.current) clearSession();
       } finally {
-        setIsLoading(false);
+        if (active) setIsLoading(false);
       }
     };
 
     checkAuth();
+    return () => { active = false; };
   }, [setUserData]);
 
   const login = async (data: any) => {
+    sessionRevision.current += 1;
     const response = await authService.login(data);
     if (response.usuario) {
       setUserData(response.usuario);
@@ -77,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const register = async (data: any) => {
+    sessionRevision.current += 1;
     const response = await authService.register(data);
     if (response.usuario) {
       setUserData(response.usuario);
@@ -85,13 +101,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = async () => {
+    sessionRevision.current += 1;
+    setUser(null);
+    setIsAuthenticated(false);
     try {
       await authService.logout();
     } catch (e) {
       console.error(e);
-    } finally {
-      setUser(null);
-      setIsAuthenticated(false);
     }
   };
 

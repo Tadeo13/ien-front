@@ -5,10 +5,23 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
   baseURL: API_URL,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+export function clearSession() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('usuario');
+  delete api.defaults.headers.common.Authorization;
+}
+
+function expireSession() {
+  clearSession();
+  window.dispatchEvent(new Event('ien:session-expired'));
+}
 
 // Interceptor para inyectar el token en cada request
 api.interceptors.request.use(
@@ -50,13 +63,16 @@ api.interceptors.response.use(
     // Si recibimos 401 y no fue un intento previo de login o refresh
     if (
       error.response?.status === 401 &&
+      originalRequest &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/refresh')
+      !originalRequest.url?.includes('/auth/refresh') &&
+      !originalRequest.url?.includes('/auth/logout')
     ) {
       
       // Manejar concurrencia: si ya se está refrescando, encolamos las peticiones
       if (isRefreshing) {
+        originalRequest._retry = true;
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -76,16 +92,20 @@ api.interceptors.response.use(
 
       if (!refreshToken) {
         // No hay refresh token, redirigir a login o emitir evento (ej: limpiar storage)
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        isRefreshing = false;
+        processQueue(error);
+        expireSession();
         return Promise.reject(error);
       }
 
       try {
         const { data } = await axios.post<AuthResponse>(`${API_URL}/auth/refresh`, {
           refresh_token: refreshToken,
-        });
+        }, { timeout: 15000 });
+
+        if (localStorage.getItem('refresh_token') !== refreshToken) {
+          throw new Error('La sesión cambió durante la renovación.');
+        }
 
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
@@ -98,9 +118,7 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        if (localStorage.getItem('refresh_token') === refreshToken) expireSession();
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

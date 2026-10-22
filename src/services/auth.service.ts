@@ -1,4 +1,4 @@
-import api from './api';
+import api, { clearSession } from './api';
 import { 
   ValidateCodeRequest, 
   ValidateCodeResponse, 
@@ -55,14 +55,12 @@ export const authService = {
 
   logout: async () => {
     const refreshToken = localStorage.getItem('refresh_token');
-    try {
-      if (refreshToken) {
-        await api.post('/auth/logout', { refresh_token: refreshToken });
-      }
-    } finally {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-      localStorage.removeItem('usuario');
+    const accessToken = localStorage.getItem('access_token');
+    clearSession();
+    if (refreshToken) {
+      await api.post('/auth/logout', { refresh_token: refreshToken }, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      });
     }
   },
 

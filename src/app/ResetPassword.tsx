@@ -174,14 +174,18 @@ export default function ResetPassword() {
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} aria-describedby={error ? "reset-error" : undefined} className="space-y-4">
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="reset-password" className="mb-2 block text-xs font-semibold text-foreground">
                 Nueva contraseña
               </label>
               <div className="relative">
                 <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reset-password"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
                   type={show ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -190,6 +194,7 @@ export default function ResetPassword() {
                 />
                 <button
                   type="button"
+                  aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
                   onClick={() => setShow(!show)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                 >
@@ -199,12 +204,16 @@ export default function ResetPassword() {
             </div>
 
             <div>
-              <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+              <label htmlFor="reset-confirm" className="mb-2 block text-xs font-semibold text-foreground">
                 Confirmar contraseña
               </label>
               <div className="relative">
                 <KeyRound size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
                 <input
+                  id="reset-confirm"
+                  autoComplete="new-password"
+                  minLength={8}
+                  required
                   type={show ? "text" : "password"}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
@@ -213,6 +222,7 @@ export default function ResetPassword() {
                 />
                 <button
                   type="button"
+                  aria-label={show ? "Ocultar confirmación" : "Mostrar confirmación"}
                   onClick={() => setShow(!show)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                 >
@@ -222,7 +232,7 @@ export default function ResetPassword() {
             </div>
 
             {error && (
-              <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+              <p id="reset-error" role="alert" className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                 {error}
               </p>
             )}

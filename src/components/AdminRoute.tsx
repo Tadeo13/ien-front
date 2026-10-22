@@ -1,8 +1,9 @@
-import { Navigate, Outlet } from 'react-router';
+import { Navigate, Outlet, useLocation } from 'react-router';
 import { useAuth } from '../context/AuthContext';
 
 export default function AdminRoute() {
-  const { isAuthenticated, isLoading, isAdmin } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin, user } = useAuth();
+  const { pathname } = useLocation();
 
   if (isLoading) {
     return (
@@ -18,6 +19,13 @@ export default function AdminRoute() {
 
   if (!isAdmin) {
     return <Navigate to="/dashboard" replace />;
+  }
+
+  if (user?.rol === 'moderador_tienda' && !['/admin', '/admin/productos', '/admin/codigos'].includes(pathname)) {
+    return <Navigate to="/admin/productos" replace />;
+  }
+  if (user?.rol !== 'admin_general' && ['/admin/grupos', '/admin/plantillas'].includes(pathname)) {
+    return <Navigate to="/admin" replace />;
   }
 
   return <Outlet />;

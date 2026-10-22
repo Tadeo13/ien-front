@@ -100,12 +100,16 @@ export default function Login() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} aria-describedby={error ? "login-error" : undefined} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                <label htmlFor="login-email" className="mb-2 block text-xs font-semibold text-foreground">
                   Correo electrónico
                 </label>
                 <input
+                  id="login-email"
+                  name="email"
+                  autoComplete="username"
+                  required
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -116,7 +120,7 @@ export default function Login() {
 
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                  <label htmlFor="login-password" className="block text-xs font-semibold text-foreground">
                     Contraseña
                   </label>
                   <button type="button" onClick={() => navigate("/forgot-password")} className="text-xs font-medium text-primary transition hover:opacity-80">
@@ -125,6 +129,10 @@ export default function Login() {
                 </div>
                 <div className="relative">
                   <input
+                    id="login-password"
+                    name="password"
+                    autoComplete="current-password"
+                    required
                     type={show ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -133,6 +141,8 @@ export default function Login() {
                   />
                   <button
                     type="button"
+                    aria-label={show ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    aria-pressed={show}
                     onClick={() => setShow(!show)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                   >
@@ -142,7 +152,7 @@ export default function Login() {
               </div>
 
               {error && (
-                <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                <p id="login-error" role="alert" className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                   {error}
                 </p>
               )}
@@ -188,7 +198,7 @@ export default function Login() {
               </p>
               <div className="flex items-center justify-center gap-12">
                 <img src="/imports/cardiosmile.jpeg" alt="Cardiosmile" className="h-24 w-auto object-contain rounded-2xl" />
-                <div className="h-20 w-px bg-border" />
+                <div className="h-20 w-px shrink-0 bg-border" />
                 <img src="/imports/vitamin_shoppe.jpeg" alt="Vitamin Shoppe" className="h-24 w-auto object-contain rounded-2xl" />
               </div>
             </div>

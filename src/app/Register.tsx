@@ -107,14 +107,18 @@ export default function Register() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} aria-describedby={error ? "register-error" : undefined} className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                <label htmlFor="register-name" className="mb-2 block text-xs font-semibold text-foreground">
                   Nombre completo
                 </label>
                 <div className="relative">
                   <UserRound size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <input
+                    id="register-name"
+                    name="name"
+                    autoComplete="name"
+                    required
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
@@ -125,12 +129,16 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                <label htmlFor="register-email" className="mb-2 block text-xs font-semibold text-foreground">
                   Correo electrónico
                 </label>
                 <div className="relative">
                   <Mail size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <input
+                    id="register-email"
+                    name="email"
+                    autoComplete="email"
+                    required
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -141,12 +149,16 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                <label htmlFor="register-password" className="mb-2 block text-xs font-semibold text-foreground">
                   Contraseña
                 </label>
                 <div className="relative">
                   <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <input
+                    id="register-password"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -155,6 +167,7 @@ export default function Register() {
                   />
                   <button
                     type="button"
+                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                   >
@@ -164,12 +177,16 @@ export default function Register() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
+                <label htmlFor="register-confirm" className="mb-2 block text-xs font-semibold text-foreground">
                   Confirmar contraseña
                 </label>
                 <div className="relative">
                   <Lock size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50" />
                   <input
+                    id="register-confirm"
+                    autoComplete="new-password"
+                    required
+                    minLength={8}
                     type={showConfirmPassword ? "text" : "password"}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
@@ -178,6 +195,7 @@ export default function Register() {
                   />
                   <button
                     type="button"
+                    aria-label={showConfirmPassword ? "Ocultar confirmación de contraseña" : "Mostrar confirmación de contraseña"}
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition hover:text-foreground"
                   >
@@ -187,7 +205,7 @@ export default function Register() {
               </div>
 
               {error && (
-                <p className="rounded-2xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
+                <p id="register-error" role="alert" className="rounded-2xl bg-destructive/10 px-3 py-2 text-sm font-medium text-destructive">
                   {error}
                 </p>
               )}
