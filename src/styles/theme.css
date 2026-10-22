@@ -10,6 +10,9 @@
   --popover-foreground: #3E3A38;
   --primary: #F0BC48;
   --primary-foreground: #3E3A38;
+  --primary-text: #7A5800;
+  --accent-text: #1E6860;
+  --destructive-text: #8A2828;
   --secondary: #F0EDEC;
   --secondary-foreground: #3E3A38;
   --muted: #E8E4E2;
@@ -50,6 +53,9 @@
   --popover-foreground: #E8E4E2;
   --primary: #F0BC48;
   --primary-foreground: #1A1816;
+  --primary-text: #F0BC48;
+  --accent-text: #6DBFAA;
+  --destructive-text: #F0A8A8;
   --secondary: #2E2C2A;
   --secondary-foreground: #E8E4E2;
   --muted: #2E2C2A;
@@ -178,4 +184,11 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+}
+
+/* Mantener los colores de marca en fondos y usar sus tonos legibles en texto. */
+@layer utilities {
+  .text-primary { color: var(--primary-text); }
+  .text-accent { color: var(--accent-text); }
+  .text-destructive { color: var(--destructive-text); }
 }

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router";
 import {
   LayoutDashboard,
@@ -34,18 +34,41 @@ export default function AdminLayout() {
   const location = useLocation();
   const { logout, user } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const onResize = () => { if (desktop.matches) setSidebarOpen(false); };
+    desktop.addEventListener("change", onResize);
+    const previous = document.activeElement as HTMLElement | null;
+    sidebarRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") { setSidebarOpen(false); menuButtonRef.current?.focus(); }
+      if (event.key === "Tab") {
+        const controls = Array.from(sidebarRef.current?.querySelectorAll<HTMLElement>("button:not(:disabled), a[href]") ?? []);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+        if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => { desktop.removeEventListener("change", onResize); document.removeEventListener("keydown", onKey); previous?.focus(); };
+  }, [sidebarOpen]);
 
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
     <div className="min-h-screen bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
-      <div className="flex h-screen overflow-hidden">
-        <aside className={`fixed inset-y-0 left-0 z-40 w-64 bg-card border-r border-border transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <div className="flex h-dvh overflow-hidden">
+        <aside ref={sidebarRef} id="admin-sidebar" aria-label="Navegación de administración" className={`fixed inset-y-0 left-0 z-40 w-64 bg-card border-r border-border transform transition-transform duration-200 lg:translate-x-0 lg:static lg:inset-auto ${sidebarOpen ? "translate-x-0 visible" : "-translate-x-full invisible lg:visible"}`}>
           <div className="flex flex-col h-full">
             <div className="flex items-center gap-3 px-6 h-16 border-b border-border">
               <img src="/imports/logo_ien-03.png" alt="IEN" className="h-8 w-auto" />
@@ -58,7 +81,8 @@ export default function AdminLayout() {
                 const active = isActive(item.path);
                 return (
                   <button
-                    key={item.path}
+                     key={item.path}
+                     aria-current={active ? "page" : undefined}
                     onClick={() => { navigate(item.path); setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-all ${active ? "bg-accent/10 text-accent" : "text-muted-foreground hover:bg-secondary hover:text-foreground"}`}
                   >
@@ -97,7 +121,7 @@ export default function AdminLayout() {
         <div className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-card border-b border-border px-4 lg:px-6 h-16 flex items-center justify-between flex-shrink-0">
             <div className="flex items-center gap-4">
-              <button onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">
+              <button ref={menuButtonRef} aria-label="Abrir navegación" aria-expanded={sidebarOpen} aria-controls="admin-sidebar" onClick={() => setSidebarOpen(true)} className="lg:hidden text-muted-foreground hover:text-foreground">
                 <Menu size={20} />
               </button>
               <div>
@@ -117,7 +141,7 @@ export default function AdminLayout() {
           </header>
 
           <main className="flex-1 overflow-y-auto">
-            <Outlet />
+            <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Cargando página…</p>}><Outlet /></Suspense>
           </main>
           <Footer />
         </div>

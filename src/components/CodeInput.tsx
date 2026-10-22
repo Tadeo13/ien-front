@@ -121,6 +121,9 @@ export default function CodeInput({ onChange, disabled, error }: Props) {
       {letters.map((val, i) => (
         <input
           key={`l${i}`}
+          aria-label={`Letra ${i + 1} del código de activación`}
+          aria-invalid={error || undefined}
+          autoCapitalize="characters"
           ref={(el) => { letterRefs.current[i] = el; }}
           type="text"
           inputMode="text"
@@ -136,6 +139,8 @@ export default function CodeInput({ onChange, disabled, error }: Props) {
       {digits.map((val, i) => (
         <input
           key={`d${i}`}
+          aria-label={`Dígito ${i + 1} del código de activación`}
+          aria-invalid={error || undefined}
           ref={(el) => { digitRefs.current[i] = el; }}
           type="text"
           inputMode="numeric"

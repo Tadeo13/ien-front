@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { Outlet, useNavigate } from "react-router";
 import { LogOut, UserRound, ChevronDown, Settings } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -45,6 +45,9 @@ export default function PatientLayout() {
 
           <div className="relative" ref={menuRef}>
             <button
+              aria-label="Abrir opciones de cuenta"
+              aria-expanded={profileOpen}
+              aria-controls="patient-profile-menu"
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-2 rounded-xl px-3 py-1.5 hover:bg-secondary transition-all"
             >
@@ -59,7 +62,7 @@ export default function PatientLayout() {
             </button>
 
             {profileOpen && (
-              <div className="absolute right-0 top-full mt-2 w-64 bg-card rounded-2xl border border-border shadow-lg overflow-hidden z-50">
+              <div id="patient-profile-menu" onKeyDown={event => { if (event.key === "Escape") { setProfileOpen(false); menuRef.current?.querySelector("button")?.focus(); } }} className="absolute right-0 top-full mt-2 w-64 bg-card rounded-2xl border border-border shadow-lg overflow-hidden z-50">
                 <div className="p-4 border-b border-border">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-primary/10">
@@ -87,7 +90,7 @@ export default function PatientLayout() {
       </header>
 
       <main>
-        <Outlet />
+        <Suspense fallback={<p role="status" className="p-6 text-sm text-muted-foreground">Cargando página…</p>}><Outlet /></Suspense>
       </main>
       <Footer />
     </div>

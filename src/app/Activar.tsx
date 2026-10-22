@@ -88,7 +88,7 @@ export default function Activar() {
           <button
             disabled={!canContinue || validating}
             onClick={handleSubmit}
-            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold text-primary-foreground bg-foreground transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold text-background bg-foreground transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {validating ? "Validando…" : "Siguiente"}
             {!validating && <ArrowRight size={16} />}

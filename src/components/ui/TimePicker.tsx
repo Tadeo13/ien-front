@@ -56,6 +56,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
 
   const commitMinute = () => {
     const n = parseInt(rawMinute);
+    if (!Number.isFinite(n) || n < 0 || n > 59) { setEditingMinute(false); return; }
     if (n === 0 || n === 30) {
       onChange({ hora, minuto: n });
     } else if (n < 15) {
@@ -97,6 +98,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
           key={`${key}-input`}
           ref={inputRef}
           type="text"
+          aria-label={key === "hour" ? "Hora del recordatorio" : "Minutos del recordatorio"}
           inputMode="numeric"
           value={raw}
           onChange={onChangeRaw}
@@ -108,6 +110,8 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
         />
       ) : (
         <motion.button
+          type="button"
+          aria-label={`${key === "hour" ? "Editar hora" : "Editar minutos"}: ${value}`}
           key={`${key}-${value}`}
           custom={dir}
           variants={{
@@ -137,6 +141,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
         <button
           type="button"
           onClick={() => cycleHour(-1)}
+          aria-label="Restar una hora"
           disabled={disabled}
           className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -146,6 +151,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
         <button
           type="button"
           onClick={() => cycleHour(1)}
+          aria-label="Sumar una hora"
           disabled={disabled}
           className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -161,6 +167,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
         <button
           type="button"
           onClick={() => cycleMinute(-1)}
+          aria-label="Cambiar minutos"
           disabled={disabled}
           className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -170,6 +177,7 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
         <button
           type="button"
           onClick={() => cycleMinute(1)}
+          aria-label="Cambiar minutos"
           disabled={disabled}
           className="w-9 h-9 rounded-xl flex items-center justify-center bg-secondary hover:bg-secondary/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -178,17 +186,17 @@ export default function TimePicker({ hora, minuto, onChange, disabled = false }:
       </div>
 
       {/* Dots de horas */}
-      <div className="flex items-center justify-center gap-1.5 mb-4">
+      <div className="mx-auto mb-4 flex max-w-xs flex-wrap items-center justify-center gap-1">
         {Array.from({ length: 24 }, (_, h) => (
           <button
             key={h}
             type="button"
+            aria-label={`Seleccionar las ${h}:00`}
+            aria-pressed={h === hora}
             onClick={() => !disabled && onChange({ hora: h, minuto })}
             disabled={disabled}
-            className={`h-1.5 rounded-full transition-all duration-300 disabled:cursor-not-allowed ${
-              h === hora ? "w-5 bg-primary" : "w-1.5 bg-muted hover:bg-muted-foreground/30"
-            }`}
-          />
+            className="flex h-8 w-5 items-center justify-center rounded-md transition-all disabled:cursor-not-allowed hover:bg-secondary"
+          ><span className={`h-1.5 rounded-full ${h === hora ? "w-5 bg-primary" : "w-1.5 bg-muted"}`} /></button>
         ))}
       </div>
 

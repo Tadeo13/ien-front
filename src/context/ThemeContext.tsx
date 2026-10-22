@@ -12,14 +12,17 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 const STORAGE_KEY = "ien-theme";
 
 function getInitialTheme(): Theme {
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (stored === "light" || stored === "dark") return stored;
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === "light" || stored === "dark") return stored;
+  } catch { /* Usar la preferencia del sistema si el almacenamiento está bloqueado. */ }
   if (window.matchMedia("(prefers-color-scheme: dark)").matches) return "dark";
   return "light";
 }
 
 function applyTheme(theme: Theme) {
   const root = document.documentElement;
+  root.style.colorScheme = theme;
   if (theme === "dark") {
     root.classList.add("dark");
   } else {
@@ -32,13 +35,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     applyTheme(theme);
-    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem(STORAGE_KEY)) {
+      let stored: string | null = null;
+      try { stored = localStorage.getItem(STORAGE_KEY); } catch { /* Seguir el sistema. */ }
+      if (!stored) {
         setTheme(e.matches ? "dark" : "light");
       }
     };
@@ -47,7 +51,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+    setTheme((prev) => {
+      const next = prev === "light" ? "dark" : "light";
+      try { localStorage.setItem(STORAGE_KEY, next); } catch { /* El cambio sigue funcionando en memoria. */ }
+      return next;
+    });
   }, []);
 
   return (
