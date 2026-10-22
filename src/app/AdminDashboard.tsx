@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import {
   AreaChart,
   Area,
@@ -18,11 +18,16 @@ import {
 } from "lucide-react";
 import { adminService } from "../services/admin.service";
 import type { AdminMetrics, GraficaSemanal, ReportesUsuarios, PaginacionPacientes } from "../types/api.types";
-import { C } from "@/constants/colors";
+import { useToneColors } from "../hooks/useToneColors";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { errorMessage } from "../utils/errors";
 import type { Tone } from "@/constants/colors";
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const C = { green: useToneColors("green"), yellow: useToneColors("yellow"), red: useToneColors("red") };
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [metrics, setMetrics] = useState<AdminMetrics[]>([]);
   const [weeklyChart, setWeeklyChart] = useState<GraficaSemanal[]>([]);
   const [reportes, setReportes] = useState<ReportesUsuarios | null>(null);
@@ -30,26 +35,31 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     const fetchData = async () => {
       try {
+        setError("");
+        setLoading(true);
         const [metricsData, chartData, reportesData, pacientesData] = await Promise.all([
           adminService.getMetrics(),
           adminService.graficaSemanal(),
           adminService.reportesUsuarios(),
           adminService.listarPacientes(1, 5),
         ]);
+        if (!active) return;
         setMetrics(metricsData);
         setWeeklyChart(chartData);
         setReportes(reportesData);
         setPacientes(pacientesData);
       } catch (err) {
-        console.error("Error fetching admin data", err);
+        if (active) setError(errorMessage(err, "No se pudo cargar el panel de administración."));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => { active = false; };
+  }, [retry]);
 
   const totalUsuarios = metrics.reduce((s, m) => s + m.total_activaciones, 0);
   const activosTotales = metrics.reduce((s, m) => s + m.usuarios_activos, 0);
@@ -79,6 +89,7 @@ export default function AdminDashboard() {
       </div>
     );
   }
+  if (error) return <div className="p-4"><ErrorNotice message={error} onRetry={() => setRetry(n => n + 1)} /></div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-4">
@@ -213,11 +224,11 @@ export default function AdminDashboard() {
               {pacientes?.pacientes.map((p) => {
                 const sc = p.plan ? statusColor(p.plan.estado) : { bg: C.red.bg, text: C.red.text };
                 return (
-                  <tr key={p.id} className="cursor-pointer hover:bg-background" onClick={() => navigate(`/admin/pacientes/${p.id}`)}>
-                    <td className="py-4 px-4 font-medium">{p.nombre}</td>
+                  <tr key={p.id} className="hover:bg-background">
+                    <td className="py-4 px-4 font-medium"><Link to={`/admin/pacientes/${p.id}`} className="hover:underline focus-visible:underline">{p.nombre}</Link></td>
                     <td className="py-4 px-4 text-muted-foreground">{p.email}</td>
                     <td className="py-4 px-4 text-muted-foreground">{p.plan?.dia_actual || "-"}</td>
-                    <td className="py-4 px-4 text-muted-foreground">{p.plan?.racha_dias || "-"}</td>
+                    <td className="py-4 px-4 text-muted-foreground">{p.plan?.racha_dias ?? "-"}</td>
                     <td className="py-4 px-4">
                       {p.plan ? (
                         <span className="inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold" style={{ backgroundColor: sc.bg, color: sc.text }}>

@@ -4,25 +4,30 @@ import { Navigate } from "react-router";
 import { adminService } from "../services/admin.service";
 import type { GrupoDocument } from "../types/api.types";
 import { useAuth } from "../context/AuthContext";
+import AdminDialog from "../components/ui/AdminDialog";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { useSubmission } from "../hooks/useSubmission";
+import { errorMessage } from "../utils/errors";
 
 export default function AdminGrupos() {
   const { user } = useAuth();
-  if (user?.rol !== "admin_general") {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
 
   const [grupos, setGrupos] = useState<GrupoDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [nombre, setNombre] = useState("");
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const { pending: saving, submit } = useSubmission();
 
   const fetchGrupos = async () => {
+    if (user?.rol !== "admin_general") return;
+    setLoadError("");
     try {
       const data = await adminService.listarGrupos();
       setGrupos(data);
     } catch (err) {
-      console.error("Error fetching grupos", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar los grupos."));
     } finally {
       setLoading(false);
     }
@@ -30,7 +35,7 @@ export default function AdminGrupos() {
 
   useEffect(() => { fetchGrupos(); }, []);
 
-  const handleSave = async () => {
+  const handleSave = () => submit(async () => {
     if (!nombre.trim()) { setError("El nombre es requerido"); return; }
     try {
       await adminService.crearGrupo(nombre.trim());
@@ -41,7 +46,9 @@ export default function AdminGrupos() {
     } catch (err: any) {
       setError(err.response?.data?.error || "Error al crear el grupo");
     }
-  };
+  });
+
+  if (user?.rol !== "admin_general") return <Navigate to="/admin" replace />;
 
   if (loading) {
     return (
@@ -69,16 +76,16 @@ export default function AdminGrupos() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-3xl p-6 w-full max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-['Lora'] text-lg font-semibold text-foreground mb-4">Nuevo grupo</h3>
+        <AdminDialog title="Nuevo grupo" busy={saving} onClose={() => setShowForm(false)} onSubmit={handleSave}>
             {error && (
               <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive mb-4">{error}</div>
             )}
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Nombre</label>
+                <label htmlFor="group-name" className="mb-2 block text-xs font-semibold text-foreground">Nombre</label>
                 <input
+                  id="group-name"
+                  required
                   type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
@@ -87,13 +94,13 @@ export default function AdminGrupos() {
                 />
               </div>
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
-                <button onClick={handleSave} disabled={!nombre.trim()} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">Crear grupo</button>
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
+                <button type="submit" disabled={saving || !nombre.trim()} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">{saving ? "Guardando…" : "Crear grupo"}</button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminDialog>
       )}
+      {loadError && <ErrorNotice message={loadError} onRetry={fetchGrupos} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {grupos.map((g) => (
@@ -107,7 +114,7 @@ export default function AdminGrupos() {
             </p>
           </div>
         ))}
-        {grupos.length === 0 && (
+        {!loadError && grupos.length === 0 && (
           <div className="col-span-full py-12 text-center text-sm text-muted-foreground">No hay grupos registrados</div>
         )}
       </div>

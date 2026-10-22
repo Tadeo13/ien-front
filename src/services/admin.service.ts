@@ -46,8 +46,8 @@ export const adminService = {
     return conId([response.data])[0] as GrupoDocument;
   },
 
-  listarPacientes: async (page = 1, limit = 20) => {
-    const response = await api.get<PaginacionPacientes>('/admin/pacientes', { params: { page, limit } });
+  listarPacientes: async (page = 1, limit = 20, search = '', signal?: AbortSignal) => {
+    const response = await api.get<PaginacionPacientes>('/admin/pacientes', { params: { page, limit, search }, signal });
     return response.data;
   },
 

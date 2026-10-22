@@ -5,6 +5,10 @@ import type { ProductoAdmin } from "../types/api.types";
 import { useAuth } from "../context/AuthContext";
 import GroupSelect from "../components/ui/GroupSelect";
 import { obtenerGrupoId, obtenerNombreGrupo } from "../utils/grupos";
+import AdminDialog from "../components/ui/AdminDialog";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { useSubmission } from "../hooks/useSubmission";
+import { errorMessage } from "../utils/errors";
 
 export default function AdminProducts() {
   const { user } = useAuth();
@@ -14,13 +18,17 @@ export default function AdminProducts() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ProductoAdmin | null>(null);
   const [form, setForm] = useState({ nombre: "", descripcion: "", grupo_id: "" });
+  const [loadError, setLoadError] = useState("");
+  const [error, setError] = useState("");
+  const { pending: saving, submit } = useSubmission();
 
   const fetchData = async () => {
+    setLoadError("");
     try {
       const products = await adminService.listarProductos();
       setProducts(products);
     } catch (err) {
-      console.error("Error fetching products", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar los productos."));
     } finally {
       setLoading(false);
     }
@@ -28,10 +36,12 @@ export default function AdminProducts() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleSave = async () => {
+  const handleSave = () => submit(async () => {
+    setError("");
+    if (!form.nombre.trim() || (esGeneral && !form.grupo_id)) { setError("Completa el nombre y el grupo del producto."); return; }
     try {
       const body: { nombre: string; descripcion: string; grupo_id?: string } = {
-        nombre: form.nombre,
+        nombre: form.nombre.trim(),
         descripcion: form.descripcion,
       };
       // Regla D: solo admin_general puede especificar grupo_id; el resto lo infiere el backend
@@ -47,11 +57,12 @@ export default function AdminProducts() {
       setForm({ nombre: "", descripcion: "", grupo_id: "" });
       await fetchData();
     } catch (err) {
-      console.error("Error saving product", err);
+      setError(errorMessage(err, "No se pudo guardar el producto."));
     }
-  };
+  });
 
   const handleEdit = (product: ProductoAdmin) => {
+    setError("");
     setEditing(product);
     setForm({ nombre: product.nombre, descripcion: product.descripcion || "", grupo_id: obtenerGrupoId(product.grupo_id) ?? "" });
     setShowForm(true);
@@ -63,7 +74,7 @@ export default function AdminProducts() {
       await adminService.eliminarProducto(id);
       await fetchData();
     } catch (err) {
-      console.error("Error deleting product", err);
+      setLoadError(errorMessage(err, "No se pudo eliminar el producto."));
     }
   };
 
@@ -84,7 +95,7 @@ export default function AdminProducts() {
           <p className="text-sm text-muted-foreground mt-1">{products.length} productos registrados</p>
         </div>
         <button
-          onClick={() => { setEditing(null); setForm({ nombre: "", descripcion: "", grupo_id: "" }); setShowForm(true); }}
+          onClick={() => { setError(""); setEditing(null); setForm({ nombre: "", descripcion: "", grupo_id: "" }); setShowForm(true); }}
           className="flex items-center gap-2 rounded-2xl bg-foreground px-5 py-3 text-sm font-semibold text-background hover:opacity-90 transition-all"
         >
           <Plus size={16} />
@@ -93,26 +104,26 @@ export default function AdminProducts() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-3xl p-6 w-full max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-['Lora'] text-lg font-semibold text-foreground mb-4">{editing ? "Editar producto" : "Nuevo producto"}</h3>
+        <AdminDialog title={editing ? "Editar producto" : "Nuevo producto"} busy={saving} onClose={() => setShowForm(false)} onSubmit={handleSave}>
+            {error && <ErrorNotice message={error} />}
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Nombre</label>
-                <input type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                <label htmlFor="product-name" className="mb-2 block text-xs font-semibold text-foreground">Nombre</label>
+                <input id="product-name" required type="text" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                   className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                   placeholder="Nombre del producto" />
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Descripción</label>
-                <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+                <label htmlFor="product-description" className="mb-2 block text-xs font-semibold text-foreground">Descripción</label>
+                <textarea id="product-description" value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
                   className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                   placeholder="Descripción opcional" rows={3} />
               </div>
               {esGeneral && (
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Grupo</label>
+                  <label htmlFor="product-group" className="mb-2 block text-xs font-semibold text-foreground">Grupo</label>
                   <GroupSelect
+                    id="product-group"
                     value={form.grupo_id}
                     onChange={(grupoId) => setForm({ ...form, grupo_id: grupoId })}
                     required
@@ -120,15 +131,16 @@ export default function AdminProducts() {
                 </div>
               )}
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
-                <button onClick={handleSave} disabled={!form.nombre} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">
-                  {editing ? "Guardar cambios" : "Crear producto"}
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
+                <button type="submit" disabled={saving || !form.nombre.trim() || (esGeneral && !form.grupo_id)} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">
+                  {saving ? "Guardando…" : editing ? "Guardar cambios" : "Crear producto"}
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminDialog>
       )}
+
+      {loadError && <ErrorNotice message={loadError} onRetry={fetchData} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map((product) => (
@@ -138,10 +150,10 @@ export default function AdminProducts() {
                 <Package size={20} />
               </div>
               <div className="flex items-center gap-1">
-                <button onClick={() => handleEdit(product)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
+                <button aria-label={`Editar ${product.nombre}`} onClick={() => handleEdit(product)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
                   <Edit3 size={14} />
                 </button>
-                <button onClick={() => handleDelete(product._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
+                <button aria-label={`Eliminar ${product.nombre}`} onClick={() => handleDelete(product._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -155,7 +167,7 @@ export default function AdminProducts() {
             </div>
           </div>
         ))}
-        {products.length === 0 && (
+        {!loadError && products.length === 0 && (
           <div className="col-span-full py-12 text-center text-sm text-muted-foreground">No hay productos registrados</div>
         )}
       </div>

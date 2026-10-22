@@ -18,6 +18,10 @@ import type {
 import { useAuth } from "../context/AuthContext";
 import GroupSelect from "../components/ui/GroupSelect";
 import { obtenerGrupoId, obtenerNombreGrupo } from "../utils/grupos";
+import AdminDialog from "../components/ui/AdminDialog";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { useSubmission } from "../hooks/useSubmission";
+import { errorMessage } from "../utils/errors";
 
 type Tab = "admins" | "moderadores";
 
@@ -39,6 +43,8 @@ export default function AdminUsuarios() {
   const [editing, setEditing] = useState<AdminNegocioItem | ModeradorTiendaItem | null>(null);
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState("");
+  const [loadError, setLoadError] = useState("");
+  const { pending: saving, submit } = useSubmission();
 
   const [form, setForm] = useState({
     nombre: "",
@@ -54,7 +60,7 @@ export default function AdminUsuarios() {
       const data = await adminService.listarAdminsNegocio();
       setAdmins(data);
     } catch (err) {
-      console.error("Error fetching admins", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar los administradores."));
     }
   };
 
@@ -63,7 +69,7 @@ export default function AdminUsuarios() {
       const data = await adminService.listarModeradores();
       setModeradores(data);
     } catch (err) {
-      console.error("Error fetching moderadores", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar los moderadores."));
     }
   };
 
@@ -72,16 +78,18 @@ export default function AdminUsuarios() {
       const data = await adminService.listarSucursales();
       setStores(data);
     } catch (err) {
-      console.error("Error fetching stores", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar las sucursales."));
     } finally {
       setStoresLoading(false);
     }
   };
 
-  useEffect(() => {
-    Promise.all([fetchAdmins(), fetchModeradores(), fetchStores()])
-      .finally(() => setLoading(false));
-  }, []);
+  const fetchData = async () => {
+    setLoadError("");
+    await Promise.all([...(isGeneral ? [fetchAdmins()] : []), fetchModeradores(), fetchStores()]);
+    setLoading(false);
+  };
+  useEffect(() => { fetchData(); }, []);
 
   // ── Helpers ───────────────────────────────────────────────────────────
   const resetForm = () => {
@@ -125,7 +133,7 @@ export default function AdminUsuarios() {
   };
 
   // ── Save ──────────────────────────────────────────────────────────────
-  const handleSave = async () => {
+  const handleSave = () => submit(async () => {
     setError("");
 
     if (tab === "admins") {
@@ -203,7 +211,7 @@ export default function AdminUsuarios() {
         setError(err.response?.data?.error || "Error al guardar moderador");
       }
     }
-  };
+  });
 
   // ── Delete ────────────────────────────────────────────────────────────
   const handleDeleteAdmin = async (id: string) => {
@@ -212,7 +220,7 @@ export default function AdminUsuarios() {
       await adminService.eliminarAdminNegocio(id);
       await fetchAdmins();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Error al eliminar");
+      setLoadError(errorMessage(err, "Error al eliminar el administrador."));
     }
   };
 
@@ -222,7 +230,7 @@ export default function AdminUsuarios() {
       await adminService.eliminarModerador(id);
       await fetchModeradores();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Error al eliminar");
+      setLoadError(errorMessage(err, "Error al eliminar el moderador."));
     }
   };
 
@@ -287,11 +295,7 @@ export default function AdminUsuarios() {
 
       {/* Modal form */}
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-3xl p-6 w-full max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-['Lora'] text-lg font-semibold text-foreground mb-4">
-              {editing ? "Editar" : "Nuevo"} {tab === "admins" ? "administrador" : "moderador"}
-            </h3>
+        <AdminDialog title={`${editing ? "Editar" : "Nuevo"} ${tab === "admins" ? "administrador" : "moderador"}`} busy={saving} onClose={() => setShowForm(false)} onSubmit={handleSave}>
 
             {error && (
               <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive mb-4">{error}</div>
@@ -299,8 +303,10 @@ export default function AdminUsuarios() {
 
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Nombre</label>
+                <label htmlFor="admin-name" className="mb-2 block text-xs font-semibold text-foreground">Nombre</label>
                 <input
+                  id="admin-name"
+                  required
                   type="text"
                   value={form.nombre}
                   onChange={(e) => setForm({ ...form, nombre: e.target.value })}
@@ -310,8 +316,10 @@ export default function AdminUsuarios() {
               </div>
 
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Email</label>
+                <label htmlFor="admin-email" className="mb-2 block text-xs font-semibold text-foreground">Email</label>
                 <input
+                  id="admin-email"
+                  required
                   type="email"
                   value={form.email}
                   onChange={(e) => setForm({ ...form, email: e.target.value })}
@@ -320,29 +328,34 @@ export default function AdminUsuarios() {
                 />
               </div>
 
-              <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">
-                  Contraseña {editing && <span className="text-muted-foreground normal-case tracking-normal">(dejar vacío para no cambiar)</span>}
+              {!editing && <div>
+                <label htmlFor="admin-password" className="mb-2 block text-xs font-semibold text-foreground">
+                  Contraseña
                 </label>
                 <div className="relative">
                   <input
+                    id="admin-password"
+                    required
+                    minLength={6}
+                    autoComplete="new-password"
                     type={showPw ? "text" : "password"}
                     value={form.password}
                     onChange={(e) => setForm({ ...form, password: e.target.value })}
                     className="w-full rounded-2xl border border-border bg-card px-4 py-3 pr-12 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
                     placeholder="Mínimo 6 caracteres"
                   />
-                  <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  <button type="button" aria-label={showPw ? "Ocultar contraseña" : "Mostrar contraseña"} onClick={() => setShowPw(!showPw)} className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
-              </div>
+              </div>}
 
               {/* Admin negocio: grupo / moderador: sucursal */}
               {tab === "admins" ? (
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Grupo</label>
+                  <label htmlFor="admin-group" className="mb-2 block text-xs font-semibold text-foreground">Grupo</label>
                   <GroupSelect
+                    id="admin-group"
                     value={form.grupo_id}
                     onChange={(grupoId) => setForm({ ...form, grupo_id: grupoId })}
                     required
@@ -350,7 +363,7 @@ export default function AdminUsuarios() {
                 </div>
               ) : (
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Sucursal</label>
+                  <label htmlFor="admin-store" className="mb-2 block text-xs font-semibold text-foreground">Sucursal</label>
                   {storesLoading ? (
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
@@ -358,6 +371,8 @@ export default function AdminUsuarios() {
                     </div>
                   ) : (
                     <select
+                      id="admin-store"
+                      required
                       value={form.tienda_id}
                       onChange={(e) => setForm({ ...form, tienda_id: e.target.value })}
                       className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
@@ -373,22 +388,24 @@ export default function AdminUsuarios() {
 
               <div className="flex items-center gap-3 pt-2">
                 <button
+                  type="button"
                   onClick={() => { setShowForm(false); resetForm(); }}
                   className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all"
                 >
                   Cancelar
                 </button>
                 <button
-                  onClick={handleSave}
+                  type="submit"
+                  disabled={saving || !!loadError}
                   className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all"
                 >
-                  {editing ? "Guardar cambios" : tab === "admins" ? "Crear administrador" : "Crear moderador"}
+                  {saving ? "Guardando…" : editing ? "Guardar cambios" : tab === "admins" ? "Crear administrador" : "Crear moderador"}
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminDialog>
       )}
+      {loadError && <ErrorNotice message={loadError} onRetry={fetchData} />}
 
       {/* Cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -400,10 +417,10 @@ export default function AdminUsuarios() {
                     <Shield size={20} />
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => handleEditAdmin(item)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
+                    <button aria-label={`Editar ${item.nombre}`} onClick={() => handleEditAdmin(item)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
                       <Edit3 size={14} />
                     </button>
-                    <button onClick={() => handleDeleteAdmin(item._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
+                    <button aria-label={`Eliminar ${item.nombre}`} onClick={() => handleDeleteAdmin(item._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -425,10 +442,10 @@ export default function AdminUsuarios() {
                     <UserCog size={20} />
                   </div>
                   <div className="flex items-center gap-1">
-                    <button onClick={() => handleEditModerador(item)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
+                    <button aria-label={`Editar ${item.nombre}`} onClick={() => handleEditModerador(item)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
                       <Edit3 size={14} />
                     </button>
-                    <button onClick={() => handleDeleteModerador(item._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
+                    <button aria-label={`Eliminar ${item.nombre}`} onClick={() => handleDeleteModerador(item._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -446,7 +463,7 @@ export default function AdminUsuarios() {
               </div>
             ))}
 
-        {items.length === 0 && (
+        {!loadError && items.length === 0 && (
           <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
             {tab === "admins" ? "No hay administradores de negocio" : "No hay moderadores de tienda"}
           </div>

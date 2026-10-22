@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router";
 import { ChevronLeft, Mail, Store, Calendar, Activity, Zap, Target } from "lucide-react";
 import { adminService } from "../services/admin.service";
 import type { PerfilPaciente, ProgresoPaciente, TestInicialResponse, DiaPlan } from "../types/api.types";
-import { C, GRAY } from "../constants/colors";
+import { useToneColors, useGray } from "../hooks/useToneColors";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { errorMessage } from "../utils/errors";
 import TestInicialResultados from "../components/TestInicialResultados";
 import ActividadesDiariasLista from "../components/ActividadesDiariasLista";
 
@@ -12,6 +14,14 @@ type Tab = "progreso" | "test" | "actividades";
 export default function AdminPatientDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const C = { green: useToneColors("green"), yellow: useToneColors("yellow"), red: useToneColors("red") };
+  const GRAY = useGray();
+  const [error, setError] = useState("");
+  const [testError, setTestError] = useState("");
+  const [activitiesError, setActivitiesError] = useState("");
+  const [retry, setRetry] = useState(0);
+  const currentId = useRef(id);
+  currentId.current = id;
   const [profile, setProfile] = useState<PerfilPaciente | null>(null);
   const [progress, setProgress] = useState<ProgresoPaciente | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,44 +33,62 @@ export default function AdminPatientDetail() {
 
   useEffect(() => {
     if (!id) return;
+    let active = true;
+    setLoading(true);
+    setError("");
+    setTestInicial(null);
+    setTestLoading(false);
+    setActividades([]);
+    setActividadesLoading(false);
+    setActiveTab("progreso");
+    setTestError("");
+    setActivitiesError("");
     const fetchData = async () => {
       try {
         const [profileData, progressData] = await Promise.all([
           adminService.perfilPaciente(id),
           adminService.progresoPaciente(id),
         ]);
+        if (!active) return;
         setProfile(profileData);
         setProgress(progressData);
       } catch (err) {
-        console.error("Error fetching patient detail", err);
+        if (active) setError(errorMessage(err, "No se pudo cargar el paciente."));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchData();
-  }, [id]);
+    return () => { active = false; };
+  }, [id, retry]);
 
   const loadTestInicial = async () => {
     if (testInicial || testLoading || !id) return;
     setTestLoading(true);
+    setTestError("");
     try {
       const data = await adminService.testInicialPaciente(id);
+      if (currentId.current !== id) return;
       setTestInicial(data);
-    } catch (_) {
+    } catch (err: any) {
+      if (currentId.current === id && err.response?.status !== 404) setTestError(errorMessage(err));
     } finally {
-      setTestLoading(false);
+      if (currentId.current === id) setTestLoading(false);
     }
   };
 
   const loadActividades = async () => {
     if (actividades.length > 0 || actividadesLoading || !id) return;
     setActividadesLoading(true);
+    setActivitiesError("");
     try {
       const data = await adminService.actividadesPaciente(id);
+      if (currentId.current !== id) return;
       setActividades(data.dias);
-    } catch (_) {
+    } catch (err) {
+      if (currentId.current === id) setActivitiesError(errorMessage(err));
     } finally {
-      setActividadesLoading(false);
+      if (currentId.current === id) setActividadesLoading(false);
     }
   };
 
@@ -85,6 +113,7 @@ export default function AdminPatientDetail() {
       </div>
     );
   }
+  if (error) return <div className="p-4"><ErrorNotice message={error} onRetry={() => setRetry(n => n + 1)} /></div>;
 
   if (!profile) {
     return (
@@ -262,6 +291,8 @@ export default function AdminPatientDetail() {
                 <div className="flex items-center justify-center py-12">
                   <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                 </div>
+              ) : testError ? (
+                <ErrorNotice message={testError} onRetry={loadTestInicial} />
               ) : testInicial ? (
                 <TestInicialResultados data={testInicial} />
               ) : (
@@ -278,6 +309,8 @@ export default function AdminPatientDetail() {
                 <div className="flex items-center justify-center py-12">
                   <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                 </div>
+              ) : activitiesError ? (
+                <ErrorNotice message={activitiesError} onRetry={loadActividades} />
               ) : (
                 <ActividadesDiariasLista dias={actividades} />
               )}

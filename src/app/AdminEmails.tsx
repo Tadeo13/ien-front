@@ -1,24 +1,14 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { Mail, ChevronLeft, ChevronRight } from "lucide-react";
 import { ALL_TEMPLATES } from "../emails/index";
 
 export default function AdminEmails() {
   const [selected, setSelected] = useState(0);
   const [previewName, setPreviewName] = useState("María García");
-  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const tpl = ALL_TEMPLATES[selected];
 
-  useEffect(() => {
-    const html = tpl.render(previewName);
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-    const doc = iframe.contentDocument;
-    if (!doc) return;
-    doc.open();
-    doc.write(html);
-    doc.close();
-  }, [selected, previewName]);
+  const html = useMemo(() => tpl.render(previewName), [tpl, previewName]);
 
   const prev = () => setSelected((s) => (s === 0 ? ALL_TEMPLATES.length - 1 : s - 1));
   const next = () => setSelected((s) => (s === ALL_TEMPLATES.length - 1 ? 0 : s + 1));
@@ -54,26 +44,27 @@ export default function AdminEmails() {
         <div className="lg:col-span-9">
           <div className="bg-card rounded-3xl border border-border overflow-hidden">
             {/* Toolbar */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <div className="flex items-center gap-3">
-                <button onClick={prev} className="rounded-xl border border-border p-2 hover:bg-secondary transition-all">
+            <div className="flex flex-wrap items-center justify-between gap-4 px-4 py-4 border-b border-border">
+              <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                <button aria-label="Plantilla anterior" onClick={prev} className="shrink-0 rounded-xl border border-border p-2 hover:bg-secondary transition-all">
                   <ChevronLeft size={16} className="text-muted-foreground" />
                 </button>
-                <div className="text-center min-w-[160px]">
+                <div className="min-w-0 text-center">
                   <p className="text-sm font-semibold text-foreground">{tpl.label}</p>
                   <p className="text-[10px] text-muted-foreground font-mono">{tpl.key}</p>
                 </div>
-                <button onClick={next} className="rounded-xl border border-border p-2 hover:bg-secondary transition-all">
+                <button aria-label="Plantilla siguiente" onClick={next} className="shrink-0 rounded-xl border border-border p-2 hover:bg-secondary transition-all">
                   <ChevronRight size={16} className="text-muted-foreground" />
                 </button>
               </div>
-              <div className="flex items-center gap-3">
-                <label className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">Nombre preview</label>
+              <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+                <label htmlFor="preview-name" className="text-xs font-semibold text-muted-foreground">Nombre de ejemplo</label>
                 <input
+                  id="preview-name"
                   type="text"
                   value={previewName}
                   onChange={(e) => setPreviewName(e.target.value)}
-                  className="w-48 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
+                  className="w-full min-w-0 rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15 sm:w-48"
                 />
               </div>
             </div>
@@ -82,10 +73,10 @@ export default function AdminEmails() {
             <div className="p-4 bg-secondary/30">
               <div className="rounded-2xl overflow-hidden border border-border bg-white" style={{ height: "70vh" }}>
                 <iframe
-                  ref={iframeRef}
+                  srcDoc={html}
                   title="Email preview"
                   className="w-full h-full border-0"
-                  sandbox="allow-same-origin"
+                  sandbox=""
                 />
               </div>
             </div>

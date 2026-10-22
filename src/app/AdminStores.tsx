@@ -12,6 +12,10 @@ import type { Sucursal } from "../types/api.types";
 import { useAuth } from "../context/AuthContext";
 import GroupSelect from "../components/ui/GroupSelect";
 import { obtenerGrupoId, obtenerNombreGrupo } from "../utils/grupos";
+import AdminDialog from "../components/ui/AdminDialog";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { useSubmission } from "../hooks/useSubmission";
+import { errorMessage } from "../utils/errors";
 
 export default function AdminStores() {
   const { user } = useAuth();
@@ -23,13 +27,17 @@ export default function AdminStores() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Sucursal | null>(null);
   const [form, setForm] = useState({ nombre_tienda: "", ciudad: "", grupo_id: "" });
+  const [loadError, setLoadError] = useState("");
+  const [error, setError] = useState("");
+  const { pending: saving, submit } = useSubmission();
 
   const fetchStores = async () => {
+    setLoadError("");
     try {
       const data = await adminService.listarSucursales(true);
       setStores(data);
     } catch (err) {
-      console.error("Error fetching stores", err);
+      setLoadError(errorMessage(err, "No se pudieron cargar las sucursales."));
     } finally {
       setLoading(false);
     }
@@ -37,7 +45,9 @@ export default function AdminStores() {
 
   useEffect(() => { fetchStores(); }, []);
 
-  const handleSave = async () => {
+  const handleSave = () => submit(async () => {
+    setError("");
+    if (!form.nombre_tienda.trim() || !form.ciudad.trim() || (isGeneral && !form.grupo_id)) { setError("Completa el nombre, la ciudad y el grupo."); return; }
     try {
       if (editing) {
         const body: { nombre_tienda: string; ciudad: string; grupo_id?: string } = {
@@ -58,11 +68,12 @@ export default function AdminStores() {
       setForm({ nombre_tienda: "", ciudad: "", grupo_id: "" });
       await fetchStores();
     } catch (err) {
-      console.error("Error saving store", err);
+      setError(errorMessage(err, "No se pudo guardar la sucursal."));
     }
-  };
+  });
 
   const handleEdit = (store: Sucursal) => {
+    setError("");
     setEditing(store);
     setForm({ nombre_tienda: store.nombre_tienda, ciudad: store.ciudad, grupo_id: obtenerGrupoId(store.grupo_id) ?? "" });
     setShowForm(true);
@@ -74,7 +85,7 @@ export default function AdminStores() {
       await adminService.eliminarSucursal(id);
       await fetchStores();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Error al desactivar la sucursal");
+      setLoadError(errorMessage(err, "Error al desactivar la sucursal."));
     }
   };
 
@@ -83,11 +94,12 @@ export default function AdminStores() {
       await adminService.reactivarSucursal(id);
       await fetchStores();
     } catch (err: any) {
-      alert(err.response?.data?.error || "Error al reactivar la sucursal");
+      setLoadError(errorMessage(err, "Error al reactivar la sucursal."));
     }
   };
 
   const openCreate = () => {
+    setError("");
     setEditing(null);
     setForm({ nombre_tienda: "", ciudad: "", grupo_id: "" });
     setShowForm(true);
@@ -121,13 +133,14 @@ export default function AdminStores() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-3xl p-6 w-full max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-['Lora'] text-lg font-semibold text-foreground mb-4">{editing ? "Editar sucursal" : "Nueva sucursal"}</h3>
+        <AdminDialog title={editing ? "Editar sucursal" : "Nueva sucursal"} busy={saving} onClose={() => setShowForm(false)} onSubmit={handleSave}>
+            {error && <ErrorNotice message={error} />}
             <div className="space-y-4">
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Nombre</label>
+                <label htmlFor="store-name" className="mb-2 block text-xs font-semibold text-foreground">Nombre</label>
                 <input
+                  id="store-name"
+                  required
                   type="text"
                   value={form.nombre_tienda}
                   onChange={(e) => setForm({ ...form, nombre_tienda: e.target.value })}
@@ -136,8 +149,10 @@ export default function AdminStores() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Ciudad</label>
+                <label htmlFor="store-city" className="mb-2 block text-xs font-semibold text-foreground">Ciudad</label>
                 <input
+                  id="store-city"
+                  required
                   type="text"
                   value={form.ciudad}
                   onChange={(e) => setForm({ ...form, ciudad: e.target.value })}
@@ -147,8 +162,9 @@ export default function AdminStores() {
               </div>
               {isGeneral && (
                 <div>
-                  <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Grupo</label>
+                  <label htmlFor="store-group" className="mb-2 block text-xs font-semibold text-foreground">Grupo</label>
                   <GroupSelect
+                    id="store-group"
                     value={form.grupo_id}
                     onChange={(grupoId) => setForm({ ...form, grupo_id: grupoId })}
                     required
@@ -156,15 +172,15 @@ export default function AdminStores() {
                 </div>
               )}
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
-                <button onClick={handleSave} disabled={!form.nombre_tienda || !form.ciudad} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">
-                  {editing ? "Guardar cambios" : "Crear sucursal"}
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">Cancelar</button>
+                <button type="submit" disabled={saving || !form.nombre_tienda.trim() || !form.ciudad.trim() || (isGeneral && !form.grupo_id)} className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all">
+                  {saving ? "Guardando…" : editing ? "Guardar cambios" : "Crear sucursal"}
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminDialog>
       )}
+      {loadError && <ErrorNotice message={loadError} onRetry={fetchStores} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {stores.map((store) => (
@@ -175,24 +191,24 @@ export default function AdminStores() {
               </div>
               <div className="flex items-center gap-1">
                 {canManage && (
-                  <button onClick={() => handleEdit(store)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
+                  <button aria-label={`Editar ${store.nombre_tienda}`} onClick={() => handleEdit(store)} className="p-2 rounded-xl text-muted-foreground hover:bg-secondary transition-all">
                     <Edit3 size={14} />
                   </button>
                 )}
                 {canManage && store.activo && (
-                  <button onClick={() => handleDelete(store._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
+                  <button aria-label={`Desactivar ${store.nombre_tienda}`} onClick={() => handleDelete(store._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-all">
                     <PowerOff size={14} />
                   </button>
                 )}
                 {canManage && !store.activo && (
-                  <button onClick={() => handleReactivar(store._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500 transition-all">
+                  <button aria-label={`Reactivar ${store.nombre_tienda}`} onClick={() => handleReactivar(store._id)} className="p-2 rounded-xl text-muted-foreground hover:bg-accent/10 hover:text-accent transition-all">
                     <RotateCcw size={14} />
                   </button>
                 )}
               </div>
             </div>
-            <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${store.activo ? 'bg-emerald-500/10 text-emerald-600' : 'bg-destructive/10 text-destructive'}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${store.activo ? 'bg-emerald-500' : 'bg-destructive'}`} />
+            <span className={`mt-3 inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${store.activo ? 'bg-accent/10 text-accent' : 'bg-destructive/10 text-destructive'}`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${store.activo ? 'bg-accent' : 'bg-destructive'}`} />
               {store.activo ? 'Activa' : 'Inactiva'}
             </span>
             <h3 className="mt-4 font-semibold text-foreground">{store.nombre_tienda}</h3>
@@ -207,7 +223,7 @@ export default function AdminStores() {
             )}
           </div>
         ))}
-        {stores.length === 0 && (
+        {!loadError && stores.length === 0 && (
           <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
             No hay sucursales registradas
           </div>

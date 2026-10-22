@@ -13,30 +13,40 @@ import {
 import { Users, Activity, TrendingUp, Calendar } from "lucide-react";
 import { adminService } from "../services/admin.service";
 import type { ReportesUsuarios, GraficaSemanal } from "../types/api.types";
-import { C } from "../constants/colors";
+import { useToneColors } from "../hooks/useToneColors";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { errorMessage } from "../utils/errors";
 
 export default function AdminReports() {
+  const C = { green: useToneColors("green"), yellow: useToneColors("yellow") };
+  const [error, setError] = useState("");
+  const [retry, setRetry] = useState(0);
   const [reportes, setReportes] = useState<ReportesUsuarios | null>(null);
   const [chartData, setChartData] = useState<GraficaSemanal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let active = true;
     const fetchData = async () => {
       try {
+        setLoading(true);
+        setError("");
         const [r, c] = await Promise.all([
           adminService.reportesUsuarios(),
           adminService.graficaSemanal(),
         ]);
+        if (!active) return;
         setReportes(r);
         setChartData(c);
       } catch (err) {
-        console.error("Error fetching reports", err);
+        if (active) setError(errorMessage(err, "No se pudieron cargar los reportes."));
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     fetchData();
-  }, []);
+    return () => { active = false; };
+  }, [retry]);
 
   const weekDays = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
   const chartFormatted = chartData.map((d) => ({
@@ -51,6 +61,7 @@ export default function AdminReports() {
       </div>
     );
   }
+  if (error) return <div className="p-4"><ErrorNotice message={error} onRetry={() => setRetry(n => n + 1)} /></div>;
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -108,8 +119,8 @@ export default function AdminReports() {
 
         <div className="bg-card rounded-3xl border border-border p-5">
           <div className="mb-4">
-            <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Comparativa</p>
-            <h2 className="font-['Lora'] text-lg font-semibold text-foreground mt-1">Registrados vs Activos</h2>
+            <p className="text-xs font-mono uppercase tracking-wider text-muted-foreground">Distribución semanal</p>
+            <h2 className="font-['Lora'] text-lg font-semibold text-foreground mt-1">Actividad por día</h2>
           </div>
           <div className="h-[280px]">
             {chartFormatted.length > 0 ? (

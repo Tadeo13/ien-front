@@ -4,6 +4,10 @@ import { adminService } from "../services/admin.service";
 import type { CodigoActivacion, Sucursal, ProductoAdmin } from "../types/api.types";
 import CodeInput from "../components/CodeInput";
 import { obtenerGrupoId } from "../utils/grupos";
+import AdminDialog from "../components/ui/AdminDialog";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { useSubmission } from "../hooks/useSubmission";
+import { errorMessage } from "../utils/errors";
 
 export default function AdminCodes() {
   const [codes, setCodes] = useState<CodigoActivacion[]>([]);
@@ -14,8 +18,12 @@ export default function AdminCodes() {
   const [error, setError] = useState("");
   const [codeKey, setCodeKey] = useState(0);
   const [form, setForm] = useState({ codigo: "", producto_id: "", tienda_id: "" });
+  const [loadError, setLoadError] = useState("");
+  const { pending: saving, submit } = useSubmission();
+  const [toggling, setToggling] = useState<string | null>(null);
 
   const fetchData = async () => {
+    setLoadError("");
     try {
       const [c, s, p] = await Promise.allSettled([
         adminService.listarCodigos(),
@@ -25,6 +33,7 @@ export default function AdminCodes() {
       setCodes(c.status === "fulfilled" ? c.value : []);
       setStores(s.status === "fulfilled" ? s.value : []);
       setProducts(p.status === "fulfilled" ? p.value : []);
+      if ([c, s, p].some(result => result.status === "rejected")) setLoadError("No se pudieron cargar todos los datos. Reintenta antes de crear un código.");
     } catch (err) {
       console.error("Error fetching codes", err);
     } finally {
@@ -34,7 +43,7 @@ export default function AdminCodes() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleSave = async () => {
+  const handleSave = () => submit(async () => {
     setError("");
     try {
       await adminService.crearCodigo(form);
@@ -44,13 +53,12 @@ export default function AdminCodes() {
       await fetchData();
     } catch (err: any) {
       setError(err.response?.data?.error || "Error al crear el código");
-      // limpiar el CodeInput para evitar reintentar el mismo código duplicado
-      setCodeKey((k) => k + 1);
-      setForm((f) => ({ ...f, codigo: "" }));
     }
-  };
+  });
 
   const toggleCode = async (code: CodigoActivacion) => {
+    if (toggling) return;
+    setToggling(code._id);
     try {
       if (code.activo) {
         await adminService.desactivarCodigo(code._id);
@@ -59,7 +67,9 @@ export default function AdminCodes() {
       }
       await fetchData();
     } catch (err) {
-      console.error("Error toggling code", err);
+      setLoadError(errorMessage(err, "No se pudo cambiar el estado del código."));
+    } finally {
+      setToggling(null);
     }
   };
 
@@ -101,9 +111,7 @@ export default function AdminCodes() {
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30" onClick={() => setShowForm(false)}>
-          <div className="bg-card rounded-3xl p-6 w-full max-w-md mx-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="font-['Lora'] text-lg font-semibold text-foreground mb-4">Nuevo código de activación</h3>
+        <AdminDialog title="Nuevo código de activación" busy={saving} onClose={() => setShowForm(false)} onSubmit={handleSave}>
             {error && (
               <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive mb-4">{error}</div>
             )}
@@ -121,8 +129,10 @@ export default function AdminCodes() {
                 </div>
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Sucursal</label>
+                <label htmlFor="code-store" className="mb-2 block text-xs font-semibold text-foreground">Sucursal</label>
                 <select
+                  id="code-store"
+                  required
                   value={form.tienda_id}
                   onChange={(e) => setForm({ ...form, tienda_id: e.target.value, producto_id: "" })}
                   className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
@@ -134,8 +144,10 @@ export default function AdminCodes() {
                 </select>
               </div>
               <div>
-                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.2em] text-foreground">Producto</label>
+                <label htmlFor="code-product" className="mb-2 block text-xs font-semibold text-foreground">Producto</label>
                 <select
+                  id="code-product"
+                  required
                   value={form.producto_id}
                   onChange={(e) => setForm({ ...form, producto_id: e.target.value })}
                   className="w-full rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-4 focus:ring-primary/15"
@@ -151,21 +163,21 @@ export default function AdminCodes() {
                 </select>
               </div>
               <div className="flex items-center gap-3 pt-2">
-                <button onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">
+                <button type="button" onClick={() => setShowForm(false)} className="flex-1 rounded-2xl border border-border px-4 py-3 text-sm font-semibold text-muted-foreground hover:bg-secondary transition-all">
                   Cancelar
                 </button>
                 <button
-                  onClick={handleSave}
-                  disabled={!form.codigo || !form.tienda_id || !form.producto_id || !/^[A-Z]{3}-\d{3}$/.test(form.codigo)}
+                  type="submit"
+                  disabled={saving || !!loadError || !form.codigo || !form.tienda_id || !form.producto_id || !/^[A-Z]{3}-\d{3}$/.test(form.codigo)}
                   className="flex-1 rounded-2xl bg-foreground px-4 py-3 text-sm font-semibold text-background hover:opacity-90 disabled:opacity-50 transition-all"
                 >
-                  Crear código
+                  {saving ? "Guardando…" : "Crear código"}
                 </button>
               </div>
             </div>
-          </div>
-        </div>
+        </AdminDialog>
       )}
+      {loadError && <ErrorNotice message={loadError} onRetry={fetchData} />}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {codes.map((code) => {
@@ -173,15 +185,16 @@ export default function AdminCodes() {
           return (
             <div key={code._id} className="bg-card rounded-3xl border border-border p-5 hover:shadow-sm transition-shadow">
               <div className="flex items-start justify-between">
-                <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ backgroundColor: activo ? "var(--accent)/0.1" : "var(--destructive)/0.1", color: activo ? "var(--accent)" : "var(--destructive)" }}>
+                <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${activo ? "bg-accent/10 text-accent" : "bg-destructive/10 text-destructive"}`}>
                   {activo ? <KeyRound size={20} /> : <QrCode size={20} />}
                 </div>
                 <button
                   onClick={() => toggleCode(code)}
+                  disabled={!!toggling}
                   className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-semibold transition-all ${activo ? "bg-destructive/10 text-destructive hover:bg-destructive/20" : "bg-accent/10 text-accent hover:bg-accent/20"}`}
                 >
                   {activo ? <PowerOff size={12} /> : <Power size={12} />}
-                  {activo ? "Desactivar" : "Activar"}
+                  {toggling === code._id ? "Guardando…" : activo ? "Desactivar" : "Activar"}
                 </button>
               </div>
               <p className="mt-4 font-mono font-semibold text-foreground">{code.codigo}</p>
@@ -201,7 +214,7 @@ export default function AdminCodes() {
             </div>
           );
         })}
-        {codes.length === 0 && (
+        {!loadError && codes.length === 0 && (
           <div className="col-span-full py-12 text-center text-sm text-muted-foreground">
             No hay códigos registrados
           </div>
