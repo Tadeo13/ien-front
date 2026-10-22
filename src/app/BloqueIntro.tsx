@@ -62,7 +62,7 @@ export default function BloqueIntro() {
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-dvh items-center justify-center bg-background">
         <span className="h-6 w-6 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
       </div>
     );
@@ -313,7 +313,7 @@ export default function BloqueIntro() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="h-dvh flex flex-col bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
       <header className="bg-card border-b border-border px-5 py-3 flex items-center gap-4 flex-shrink-0">
         <button onClick={() => navigate("/dashboard")} className="text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft size={20} />
@@ -369,7 +369,7 @@ export default function BloqueIntro() {
                 disabled={!canContinue}
                 onClick={() => navigate("/lectura")}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold text-background transition-all hover:opacity-90 disabled:cursor-not-allowed shadow-lg"
-                style={{ backgroundColor: tone.color }}>
+                style={{ backgroundColor: tone.text, color: tone.bg }}>
                 <ArrowRight size={15} /> Continuar a la lección
               </button>
               {!canContinue && (

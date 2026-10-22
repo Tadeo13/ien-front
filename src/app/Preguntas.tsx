@@ -5,6 +5,10 @@ import { useToneColors, useGray } from "../hooks/useToneColors";
 import { planService } from "../services/plan.service";
 import type { SetupTestResponse } from "../types/api.types";
 import Footer from "../components/layout/Footer";
+import { useAuth } from "../context/AuthContext";
+import { useLocalDraft } from "../hooks/useLocalDraft";
+import ErrorNotice from "../components/ui/ErrorNotice";
+import { errorMessage } from "../utils/errors";
 
 const TONO = "red" as const;
 
@@ -15,16 +19,29 @@ interface DBQuestion {
   competencia_label: string;
 }
 
+interface TestDraft { current: number; answers: Record<number, number> }
+const emptyDraft: TestDraft = { current: 0, answers: {} };
+function isTestDraft(value: unknown): value is TestDraft {
+  const draft = value as TestDraft | null;
+  return !!draft && Number.isInteger(draft.current) && draft.current >= 0 &&
+    !!draft.answers && typeof draft.answers === "object" && !Array.isArray(draft.answers) &&
+    Object.values(draft.answers).every(score => Number.isInteger(score) && score >= 1 && score <= 5);
+}
+
 export default function Preguntas() {
   const navigate = useNavigate();
   const [questions, setQuestions] = useState<DBQuestion[]>([]);
-  const [current, setCurrent] = useState(0);
-  const [answers, setAnswers] = useState<Record<number, number>>({});
+  const { user } = useAuth();
+  const [draft, setDraft, clearDraft] = useLocalDraft(`ien:test-draft:v1:${user?.id}`, emptyDraft, isTestDraft);
+  const answers = draft.answers;
+  const current = Math.min(draft.current, Math.max(0, questions.length - 1));
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [testResult, setTestResult] = useState<SetupTestResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [retry, setRetry] = useState(0);
   const tone = useToneColors(TONO);
   const gray = useGray();
   const greenTone = useToneColors("green");
@@ -35,17 +52,18 @@ export default function Preguntas() {
     const fetchQuestions = async () => {
       try {
         setLoading(true);
+        setLoadError(null);
         const data = await planService.getTestPreguntas();
         setQuestions(data);
       } catch (err) {
         console.error("Error fetching diagnostic questions:", err);
-        setError("No se pudieron cargar las preguntas del test. Intenta de nuevo más tarde.");
+        setLoadError("No se pudieron cargar las preguntas del test. Intenta de nuevo más tarde.");
       } finally {
         setLoading(false);
       }
     };
     fetchQuestions();
-  }, []);
+  }, [retry]);
 
   if (loading) {
     return (
@@ -55,11 +73,12 @@ export default function Preguntas() {
     );
   }
 
-  if (error || questions.length === 0) {
+  if (loadError || questions.length === 0) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
         <BookOpen size={48} className="text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold text-foreground">{error || "No hay preguntas disponibles"}</h2>
+        <h2 className="text-lg font-semibold text-foreground">{loadError || "No hay preguntas disponibles"}</h2>
+        <button onClick={() => setRetry(n => n + 1)} className="mt-4 rounded-xl border border-border px-4 py-2 text-sm">Reintentar</button>
         <button onClick={() => navigate("/dashboard")} className="mt-4 px-4 py-2 bg-foreground text-background text-xs font-semibold rounded-xl">Volver al Dashboard</button>
       </div>
     );
@@ -73,22 +92,29 @@ export default function Preguntas() {
 
   const next = () => {
     if (current < total - 1) {
-      setCurrent((c) => c + 1);
+      setDraft(prev => ({ ...prev, current: current + 1 }));
     } else {
       handleSubmit();
     }
   };
 
-  const prev = () => setCurrent((c) => Math.max(0, c - 1));
+  const prev = () => setDraft(prev => ({ ...prev, current: Math.max(0, current - 1) }));
 
   const handleSubmit = async () => {
+    if (submitting) return;
+    const missing = questions.findIndex(item => answers[item.numero] === undefined);
+    if (missing !== -1) {
+      setDraft(prev => ({ ...prev, current: missing }));
+      setError("Responde todas las preguntas antes de crear tu plan.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     try {
       const payload = {
         respuestas: questions.map((item) => ({
           numero: item.numero,
-          score: answers[item.numero] || 3 // Fallback prudente
+          score: answers[item.numero]
         })),
         emociones_a_mejorar: [] // El backend lo deriva o requiere vacío
       };
@@ -96,9 +122,10 @@ export default function Preguntas() {
       const result = await planService.setupTest(payload);
       setTestResult(result);
       setSubmitted(true);
+      clearDraft();
     } catch (err: any) {
       console.error("Error setting up plan:", err);
-      setError(err.response?.data?.error || "Ocurrió un error al procesar tus respuestas.");
+      setError(errorMessage(err, "Ocurrió un error al procesar tus respuestas. Puedes volver a intentarlo."));
       setSubmitting(false);
     }
   };
@@ -170,7 +197,7 @@ export default function Preguntas() {
     <div className="min-h-screen bg-background flex flex-col" style={{ fontFamily: "'Inter', sans-serif" }}>
       {/* Header */}
       <header className="bg-card border-b border-border px-5 py-3 flex items-center gap-4 flex-shrink-0">
-        <button onClick={() => current > 0 ? prev() : navigate("/dashboard")} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button aria-label={current > 0 ? "Pregunta anterior" : "Volver al dashboard"} disabled={submitting} onClick={() => current > 0 ? prev() : navigate("/dashboard")} className="text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft size={20} />
         </button>
         <div className="flex-1">
@@ -214,11 +241,14 @@ export default function Preguntas() {
                 return (
                   <button
                     key={val}
-                    onClick={() => setAnswers((prev) => ({ ...prev, [q.numero]: val }))}
+                    disabled={submitting}
+                    aria-pressed={selected}
+                    aria-label={`${val} de 5`}
+                    onClick={() => { setDraft(prev => ({ ...prev, answers: { ...prev.answers, [q.numero]: val } })); setError(null); }}
                     className="flex-1 aspect-square rounded-xl font-mono font-semibold text-sm transition-all hover:scale-105"
                     style={{
-                      backgroundColor: selected ? tone.color : tone.bg,
-                      color: selected ? 'var(--background)' : tone.color,
+                      backgroundColor: selected ? tone.text : tone.bg,
+                      color: selected ? tone.bg : tone.text,
                       border: `2px solid ${selected ? tone.color : tone.soft}`,
                     }}>
                     {val}
@@ -234,9 +264,7 @@ export default function Preguntas() {
 
           {/* Error display */}
           {error && (
-            <p className="mt-4 rounded-xl bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive">
-              {error}
-            </p>
+            <div className="mt-4"><ErrorNotice message={error} /></div>
           )}
 
           {/* Navigation */}
@@ -244,6 +272,7 @@ export default function Preguntas() {
             {current > 0 && (
               <button
                 onClick={prev}
+                disabled={submitting}
                 className="flex items-center gap-1.5 px-5 py-3 rounded-xl text-sm font-medium text-muted-foreground border border-border bg-card hover:bg-background transition-all">
                 <ChevronLeft size={15} />
                 Anterior
@@ -253,7 +282,7 @@ export default function Preguntas() {
               disabled={!canAdvance || submitting}
               onClick={next}
               className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold text-background transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{ backgroundColor: tone.color }}>
+              style={{ backgroundColor: tone.text, color: tone.bg }}>
               {submitting ? (
                 <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
               ) : current === total - 1 ? (

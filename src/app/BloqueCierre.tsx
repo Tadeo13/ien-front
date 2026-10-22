@@ -5,6 +5,8 @@ import { BLOCKS } from "@/constants/program";
 import { useToneColors } from "@/hooks/useToneColors";
 import { planService } from "../services/plan.service";
 import Footer from "../components/layout/Footer";
+import { useAuth } from "../context/AuthContext";
+import { activityDraftKey, removeActivityDraft } from "../services/activityDraft";
 
 interface BloqueCierreState {
   diaActual: number;
@@ -15,6 +17,7 @@ interface BloqueCierreState {
 export default function BloqueCierre() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const navState = location.state as BloqueCierreState | null;
   const [scrollPct, setScrollPct] = useState(0);
   const [noScrollNeeded, setNoScrollNeeded] = useState(false);
@@ -61,6 +64,7 @@ export default function BloqueCierre() {
     setError(null);
     try {
       await planService.completeDay(respuesta_usuario);
+      if (user) removeActivityDraft(activityDraftKey(user.id, diaActual));
       navigate("/dashboard", { replace: true });
     } catch (err) {
       console.error("Error al completar el día:", err);
@@ -100,7 +104,7 @@ export default function BloqueCierre() {
 
   return (
     <div
-      className="h-screen flex flex-col bg-background"
+      className="h-dvh flex flex-col bg-background"
       style={{ fontFamily: "'Inter', sans-serif" }}
     >
       {/* Header */}
@@ -190,7 +194,7 @@ export default function BloqueCierre() {
                 disabled={!canContinue || completando}
                 onClick={handleComplete}
                 className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold text-background transition-all hover:opacity-90 disabled:cursor-not-allowed shadow-lg"
-                style={{ backgroundColor: tone.color }}
+                style={{ backgroundColor: tone.text, color: tone.bg }}
               >
                 {completando ? (
                   <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />

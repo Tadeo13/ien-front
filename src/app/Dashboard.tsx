@@ -15,6 +15,9 @@ import { planService } from "../services/plan.service";
 import { useToneColors, useGray, type GrayColors } from "../hooks/useToneColors";
 
 import type { Leccion, PlanProfileResponse, TestInicialResponse, DiaPlan, BienvenidaResponse } from "../types/api.types";
+import { useAuth } from "../context/AuthContext";
+import { useLocalDraft } from "../hooks/useLocalDraft";
+import ErrorNotice from "../components/ui/ErrorNotice";
 
 const SUPPLEMENT_ICONS: Record<string, any> = {
   'Ashwagandha': TrendingUp,
@@ -89,7 +92,7 @@ function BlockGridItem({ block, isDone, isNow, TODAY, gray }: { block: typeof BL
       <div className="flex gap-0.5 mt-2 flex-wrap">
         {Array.from({ length: block.end - block.start + 1 }).map((_, i) => {
           const dayN = block.start + i;
-          const filled = dayN < TODAY;
+          const filled = isDone || dayN < TODAY;
           return (
             <div key={i} className="w-2 h-2 rounded-full transition-all duration-300"
               style={{ backgroundColor: filled ? bc.color : bc.soft }} />
@@ -109,8 +112,7 @@ function SupplementItem({ sup, checked, onToggle, gray }: { sup: any; checked: b
     : Pill;
   return (
     <div
-      className="flex items-center gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm cursor-pointer"
-      onClick={onToggle}
+      className="flex items-center gap-3 p-3 rounded-xl transition-shadow hover:shadow-sm"
       style={{ backgroundColor: checked ? bc.bg : gray.faint }}>
       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
         style={{ backgroundColor: bc.soft }}>
@@ -121,6 +123,8 @@ function SupplementItem({ sup, checked, onToggle, gray }: { sup: any; checked: b
         <p className="text-[10px] font-mono text-muted-foreground">{sup.dosis} · {sup.horario}</p>
       </div>
       <button
+        aria-label={`${checked ? "Desmarcar" : "Marcar"} ${sup.nombre}`}
+        aria-pressed={checked}
         onClick={(e) => { e.stopPropagation(); onToggle(); }}
         className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all hover:scale-110 active:scale-95"
         style={{ borderColor: bc.color, backgroundColor: checked ? bc.color : "transparent" }}>
@@ -132,6 +136,8 @@ function SupplementItem({ sup, checked, onToggle, gray }: { sup: any; checked: b
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [retry, setRetry] = useState(0);
 
   const [leccion, setLeccion] = useState<Leccion | null>(null);
   const [profile, setProfile] = useState<PlanProfileResponse | null>(null);
@@ -142,21 +148,28 @@ export default function Dashboard() {
   const [bienvenidaOpen, setBienvenidaOpen] = useState(false);
   const [bienvenidaData, setBienvenidaData] = useState<BienvenidaResponse | null>(null);
 
-  const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [checked, setChecked] = useLocalDraft<Record<number, boolean>>(
+    `ien:supplements:v1:${user?.id}:${profile?.fecha_inicio}:${profile?.dia_actual}:${new Date().toLocaleDateString("en-CA")}`,
+    {},
+    (value): value is Record<number, boolean> => !!value && typeof value === "object" && !Array.isArray(value) && Object.values(value).every(v => typeof v === "boolean"),
+  );
 
   const [testInicial, setTestInicial] = useState<TestInicialResponse | null>(null);
   const [testLoading, setTestLoading] = useState(false);
   const [testOpen, setTestOpen] = useState(false);
+  const [testError, setTestError] = useState(false);
 
   const [actividades, setActividades] = useState<DiaPlan[]>([]);
   const [actividadesLoading, setActividadesLoading] = useState(false);
   const [actividadesOpen, setActividadesOpen] = useState(false);
+  const [actividadesError, setActividadesError] = useState(false);
 
 
   useEffect(() => {
     const load = async () => {
       try {
         setPlanLoading(true);
+        setPlanError(null);
         const [todayData, profileData] = await Promise.all([
           planService.getTodayPlan(),
           planService.getProfile(),
@@ -181,15 +194,17 @@ export default function Dashboard() {
       }
     };
     load();
-  }, []);
+  }, [retry]);
 
   const loadTestInicial = async () => {
     if (testInicial || testLoading) return;
     setTestLoading(true);
+    setTestError(false);
     try {
       const data = await planService.getTestInicial();
       setTestInicial(data);
     } catch (_) {
+      setTestError(true);
     } finally {
       setTestLoading(false);
     }
@@ -198,10 +213,12 @@ export default function Dashboard() {
   const loadActividades = async () => {
     if (actividades.length > 0 || actividadesLoading) return;
     setActividadesLoading(true);
+    setActividadesError(false);
     try {
       const data = await planService.getDays(true);
       setActividades(data.dias);
     } catch (_) {
+      setActividadesError(true);
     } finally {
       setActividadesLoading(false);
     }
@@ -341,8 +358,10 @@ export default function Dashboard() {
                 <p className="text-sm font-semibold text-foreground">Completá el test inicial</p>
                 <p className="text-xs text-muted-foreground mt-1 leading-relaxed max-w-[220px]">Respondé algunas preguntas para personalizar tu programa de 30 días</p>
               </div>
-              <button onClick={() => navigate('/preguntas')} className="mt-1 px-5 py-2.5 rounded-xl text-xs font-semibold text-background shadow-sm transition-all hover:opacity-90" style={{ backgroundColor: tone.color }}>Iniciar test</button>
+              <button onClick={() => navigate('/preguntas')} className="mt-1 px-5 py-2.5 rounded-xl text-xs font-semibold text-background shadow-sm transition-all hover:opacity-90" style={{ backgroundColor: tone.text, color: tone.bg }}>Iniciar test</button>
             </div>
+          ) : planError === 'error' ? (
+            <ErrorNotice message="No se pudo cargar tu programa." onRetry={() => setRetry(n => n + 1)} />
           ) : profile?.estado === 'completado' ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-4 py-8 text-center">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ backgroundColor: greenTone.soft }}>
@@ -395,7 +414,7 @@ export default function Dashboard() {
                 <button
                   onClick={() => navigate("/bloque-intro")}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold text-background transition-all hover:opacity-90 shadow-sm"
-                  style={{ backgroundColor: tone.color }}>
+                  style={{ backgroundColor: tone.text, color: tone.bg }}>
                   <BookOpen size={13} />
                   Lectura del día
                 </button>
@@ -468,7 +487,7 @@ export default function Dashboard() {
         <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-4">Los 6 bloques</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
           {BLOCKS.map((b) => (
-            <BlockGridItem key={b.id} block={b} isDone={b.id < ACTIVE.id} isNow={b.id === ACTIVE.id} TODAY={TODAY} gray={gray} />
+            <BlockGridItem key={b.id} block={b} isDone={completedPlan || b.id < ACTIVE.id} isNow={!completedPlan && b.id === ACTIVE.id} TODAY={TODAY} gray={gray} />
           ))}
         </div>
       </div>
@@ -482,6 +501,7 @@ export default function Dashboard() {
             <button
               className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-card transition-colors"
               onClick={() => { setTestOpen(!testOpen); if (!testOpen) loadTestInicial(); }}
+              aria-expanded={testOpen}
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: redTone.soft }}>
                 <ShieldCheck size={16} style={{ color: redTone.color }} />
@@ -498,6 +518,8 @@ export default function Dashboard() {
                   <div className="flex items-center justify-center py-8">
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                   </div>
+                ) : testError ? (
+                  <ErrorNotice message="No se pudo cargar el test inicial." onRetry={loadTestInicial} />
                 ) : testInicial ? (
                   <TestInicialResultados data={testInicial} />
                 ) : (
@@ -512,6 +534,7 @@ export default function Dashboard() {
             <button
               className="w-full flex items-center gap-4 px-5 py-4 text-left hover:bg-card transition-colors"
               onClick={() => { setActividadesOpen(!actividadesOpen); if (!actividadesOpen) loadActividades(); }}
+              aria-expanded={actividadesOpen}
             >
               <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: greenTone.soft }}>
                 <CheckCircle2 size={16} style={{ color: greenTone.color }} />
@@ -528,6 +551,8 @@ export default function Dashboard() {
                   <div className="flex items-center justify-center py-8">
                     <span className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
                   </div>
+                ) : actividadesError ? (
+                  <ErrorNotice message="No se pudieron cargar las actividades." onRetry={loadActividades} />
                 ) : (
                   <ActividadesDiariasLista dias={actividades} />
                 )}

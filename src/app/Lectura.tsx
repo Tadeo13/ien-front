@@ -5,17 +5,22 @@ import { useToneColors } from "@/hooks/useToneColors";
 import Secciones from "@/components/ui/Secciones";
 import TablaInfo from "@/components/ui/TablaInfo";
 import TablaCampo, { tablaCompleta } from "@/components/ui/TablaCampo";
+import RespuestaConVoz from "@/components/ui/RespuestaConVoz";
 import { planService } from "../services/plan.service";
 import api from "../services/api";
 import type { Leccion, CampoRespuesta } from "../types/api.types";
 import Footer from "../components/layout/Footer";
+import { useAuth } from "../context/AuthContext";
+import { activityDraftKey, lessonSignature, readActivityDraft, saveActivityDraft, removeActivityDraft, type ActivityDraft } from "../services/activityDraft";
 
 
 export default function Lectura() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const { diaNumero } = useParams();
-  const readOnly = !!diaNumero;
+  const [completedView, setCompletedView] = useState(false);
+  const readOnly = !!diaNumero || completedView;
   const navState = location.state as { leccion?: Leccion; savedAnswers?: { id: string; valor: any; tipo: string }[]; returnTo?: string } | null;
   const returnTo = navState?.returnTo || "/dashboard";
   const [scrollPct, setScrollPct] = useState(0);
@@ -26,32 +31,76 @@ export default function Lectura() {
   const [savedAnswers, setSavedAnswers] = useState<{ id: string; valor: any; tipo: string }[]>([]);
   const [completando, setCompletando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState(false);
+  const [retry, setRetry] = useState(0);
   const [instruccionAbierta, setInstruccionAbierta] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  const draftRef = useRef<{ key: string; data: ActivityDraft } | null>(null);
+  const [draftStatus, setDraftStatus] = useState<"saved" | "error" | null>(null);
   const tone = useToneColors("green");
 
-  const setAnswer = (id: string, value: any) => setAnswers(prev => ({ ...prev, [id]: value }));
+  const persistDraft = () => {
+    const draft = draftRef.current;
+    if (draft) {
+      setDraftStatus(saveActivityDraft(draft.key, draft.data) ? "saved" : "error");
+    }
+  };
+
+  const setAnswer = (id: string, value: any) => {
+    const next = { ...answers, [id]: value };
+    setAnswers(next);
+    if (draftRef.current) {
+      draftRef.current.data.answers = next;
+      persistDraft();
+    }
+  };
 
   // Scroll progress
   useEffect(() => {
     if (readOnly) return;
     const el = contentRef.current;
     if (!el) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const flush = () => {
+      if (timer) clearTimeout(timer);
+      const draft = draftRef.current;
+      if (draft) saveActivityDraft(draft.key, draft.data);
+    };
     const onScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = el;
-      setScrollPct(Math.round((scrollTop / (scrollHeight - clientHeight)) * 100));
+      const range = scrollHeight - clientHeight;
+      setScrollPct(range <= 0 ? 100 : Math.round((scrollTop / range) * 100));
+      if (draftRef.current) {
+        draftRef.current.data.scrollTop = scrollTop;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(persistDraft, 300);
+      }
     };
+    el.scrollTop = draftRef.current?.data.scrollTop ?? 0;
+    onScroll();
     el.addEventListener("scroll", onScroll);
-    return () => el.removeEventListener("scroll", onScroll);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", flush);
+      flush();
+    };
   }, [loading, readOnly]);
 
   // Load lesson from API
   useEffect(() => {
+    let active = true;
     const loadLesson = async () => {
       try {
         setLoading(true);
+        setLoadError(false);
+        setCompletedView(false);
+        setSavedAnswers([]);
+        setAnswers({});
+        setConclusion(null);
+        draftRef.current = null;
 
-        if (readOnly) {
+        if (diaNumero) {
           if (navState?.leccion) {
             setLeccion(navState.leccion);
             if (navState.savedAnswers) {
@@ -62,6 +111,7 @@ export default function Lectura() {
 
           const dayNum = parseInt(diaNumero!, 10);
           const response = await api.get('/plan/days');
+          if (!active) return;
           const allDays = response.data.dias || [];
           const targetDay = allDays.find((d: any) => d.dia_numero === dayNum);
           if (targetDay && targetDay.leccion) {
@@ -82,17 +132,31 @@ export default function Lectura() {
         }
 
         const todayData = await planService.getTodayPlan();
+        if (!active) return;
         if (todayData.leccion) {
+          if (user) {
+            const key = activityDraftKey(user.id, todayData.leccion.dia_actual);
+            const signature = lessonSignature(todayData.leccion);
+            const draft = readActivityDraft(key, signature);
+            draftRef.current = {
+              key,
+              data: draft ?? { signature, answers: {}, scrollTop: 0 },
+            };
+            setAnswers(draftRef.current.data.answers);
+            if (draft) setDraftStatus("saved");
+          }
           setLeccion(todayData.leccion);
           setConclusion(todayData.conclusion ?? null);
         } else {
           // Si ya se completó hoy, la lección viene como null en /today.
           // La buscamos en el historial completo de días para que el usuario pueda releerla.
-          const profile = await planService.getProfile();
           const response = await api.get('/plan/days');
+          if (!active) return;
           const allDays = response.data.dias || [];
-          const todayLesson = allDays.find((d: any) => d.dia_numero === profile.dia_actual);
+          const todayLesson = allDays.filter((d: any) => d.completado).sort((a: any, b: any) => b.dia_numero - a.dia_numero)[0];
           if (todayLesson && todayLesson.leccion) {
+            setCompletedView(true);
+            setSavedAnswers(todayLesson.respuesta_usuario ?? []);
             setLeccion({
               dia_actual: todayLesson.dia_numero,
               titulo: todayLesson.leccion.titulo,
@@ -106,12 +170,14 @@ export default function Lectura() {
         }
       } catch (err) {
         console.error("Error al cargar la lectura del día:", err);
+        if (active) { setLeccion(null); setLoadError(true); }
       } finally {
-        setLoading(false);
+        if (active) setLoading(false);
       }
     };
     loadLesson();
-  }, []);
+    return () => { active = false; };
+  }, [diaNumero, user?.id, retry]);
 
   const handleComplete = async () => {
     if (completando || !leccion) return;
@@ -122,7 +188,7 @@ export default function Lectura() {
         if (c.tipo === 'tabla') return !tablaCompleta(c, v);
         if (c.tipo === 'escala') return v === undefined;
         if (c.tipo === 'accion') return !v;
-        return v === undefined || v === '';
+        return v === undefined || (typeof v === 'string' && !v.trim());
       });
       if (faltan.length > 0) {
         setError(`Completá: ${faltan.map(c => c.etiqueta).join(', ')}`);
@@ -154,9 +220,14 @@ export default function Lectura() {
       }
 
       await planService.completeDay(respuesta_usuario);
+      if (draftRef.current) {
+        removeActivityDraft(draftRef.current.key);
+        draftRef.current = null;
+      }
       navigate(returnTo);
     } catch (err) {
       console.error("Error al completar actividad:", err);
+      setError("No se pudo completar la actividad. Tus respuestas se conservan; inténtalo de nuevo.");
     } finally {
       setCompletando(false);
     }
@@ -194,8 +265,8 @@ export default function Lectura() {
                     onClick={() => setAnswer(campo.id, val)}
                     className="w-full aspect-square max-w-[52px] rounded-xl font-mono font-semibold text-sm transition-all hover:scale-105"
                     style={{
-                      backgroundColor: selected ? tone.color : tone.bg,
-                      color: selected ? 'var(--background)' : tone.color,
+                      backgroundColor: selected ? tone.text : tone.bg,
+                      color: selected ? tone.bg : tone.text,
                         border: `2px solid ${selected ? tone.color : tone.soft}`,
                     }}>
                     {val}
@@ -263,13 +334,12 @@ export default function Lectura() {
             </div>
           </div>
         )}
-        {campo.tipo === 'texto' && (
-          <textarea
-            className="w-full rounded-xl border text-sm text-foreground p-3 resize-none focus:outline-none bg-background transition-all focus:shadow-sm"
-            style={{ borderColor: 'var(--border)', minHeight: 80, fontFamily: "'Lora', serif" }}
-            placeholder="Escribe tu respuesta aquí..."
+        {(campo.tipo === 'texto' || campo.tipo === 'reflexion') && (
+          <RespuestaConVoz
+            tone={tone}
+            label={campo.etiqueta}
             value={answers[campo.id] ?? ''}
-            onChange={(e) => setAnswer(campo.id, e.target.value)}
+            onChange={(value) => setAnswer(campo.id, value)}
           />
         )}
         {campo.tipo === 'accion' && (
@@ -308,19 +378,20 @@ export default function Lectura() {
     return (
       <div className="h-screen flex flex-col items-center justify-center bg-background px-4 text-center">
         <BookOpen size={48} className="text-muted-foreground mb-4" />
-        <h2 className="text-lg font-semibold text-foreground">Lectura no disponible</h2>
-        <p className="text-sm text-muted-foreground mt-1 max-w-xs">No se encontró contenido activo para hoy. Asegúrate de tener un plan iniciado.</p>
+        <h2 className="text-lg font-semibold text-foreground">{loadError ? "No se pudo cargar la lectura" : "Lectura no disponible"}</h2>
+        <p className="text-sm text-muted-foreground mt-1 max-w-xs">{loadError ? "Revisa tu conexión e inténtalo de nuevo. Tu borrador se conserva." : "No se encontró contenido activo para hoy. Asegúrate de tener un plan iniciado."}</p>
+        {loadError && <button onClick={() => setRetry(n => n + 1)} className="mt-4 rounded-xl border border-border px-4 py-2 text-sm">Reintentar</button>}
         <button onClick={() => navigate("/dashboard")} className="mt-4 px-4 py-2 bg-foreground text-background text-xs font-semibold rounded-xl">Volver al Dashboard</button>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="h-dvh flex flex-col bg-background" style={{ fontFamily: "'Inter', sans-serif" }}>
 
       {/* Header */}
       <header className="bg-card border-b border-border px-5 py-3 flex items-center gap-4 flex-shrink-0">
-        <button onClick={() => navigate(returnTo)} className="text-muted-foreground hover:text-foreground transition-colors">
+        <button aria-label="Volver" onClick={() => navigate(returnTo)} className="text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft size={20} />
         </button>
         <div className="flex-1 min-w-0">
@@ -344,7 +415,7 @@ export default function Lectura() {
       )}
 
       {/* Reading content */}
-      <div ref={contentRef} className="flex-1 overflow-y-auto">
+      <div ref={contentRef} className="min-h-0 flex-1 overflow-y-auto">
         <div className="max-w-2xl mx-auto px-5 py-8">
 
           {/* Intro badge */}
@@ -411,6 +482,13 @@ export default function Lectura() {
           )}
 
           {/* Ejercicio del día */}
+          {!readOnly && draftStatus && (
+            <p role="status" className={`text-xs mb-4 ${draftStatus === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+              {draftStatus === "saved"
+                ? "Progreso guardado automáticamente en este navegador. Puedes salir y continuar después."
+                : "No se pudo guardar el borrador en este navegador. Mantén esta página abierta hasta completar la actividad."}
+            </p>
+          )}
           {leccion.datos_leccion?.ejercicio && (
             <div className="bg-card rounded-2xl border border-border p-5 mb-8">
               <p className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">Ejercicio del día</p>
@@ -473,10 +551,8 @@ export default function Lectura() {
                               <span className="text-sm font-mono font-bold" style={{ color: tone.color }}>{saved.valor}</span>
                             </div>
                           )}
-                          {saved.tipo === 'texto' && (
-                            <div className="rounded-xl p-3 text-sm italic text-muted-foreground leading-relaxed" style={{ backgroundColor: tone.bg, borderLeft: `3px solid ${tone.color}`, whiteSpace: 'pre-line' }}>
-                              "{saved.valor}"
-                            </div>
+                          {(saved.tipo === 'texto' || saved.tipo === 'reflexion') && (
+                            <RespuestaConVoz tone={tone} label={campo?.etiqueta || pasoTexto || saved.id} value={String(saved.valor ?? '')} readOnly />
                           )}
                           {saved.tipo === 'accion' && (
                             <div className="flex items-center gap-2">
@@ -574,7 +650,7 @@ export default function Lectura() {
                   disabled={!canContinue || completando}
                   onClick={handleComplete}
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl text-sm font-semibold text-background transition-all hover:opacity-90 disabled:cursor-not-allowed shadow-lg"
-                  style={{ backgroundColor: tone.color }}>
+                  style={{ backgroundColor: tone.text, color: tone.bg }}>
                   {completando
                     ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
                     : conclusion
