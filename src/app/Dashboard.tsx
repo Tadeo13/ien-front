@@ -138,6 +138,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [retry, setRetry] = useState(0);
+  const canTestPlan = user?.rol === 'admin_general' || user?.rol === 'admin_negocio';
 
   const [leccion, setLeccion] = useState<Leccion | null>(null);
   const [profile, setProfile] = useState<PlanProfileResponse | null>(null);
@@ -242,7 +243,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
 
-      <div className="flex justify-end gap-2">
+      {canTestPlan && <div className="flex justify-end gap-2">
         <button
           onClick={async () => {
             try {
@@ -283,8 +284,7 @@ export default function Dashboard() {
         >
           AVANZAR DÍA
         </button>
-      </div>
-
+      </div>}
       {/* ── Estado del plan ── */}
       {profile && !planLoading && (
         <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
